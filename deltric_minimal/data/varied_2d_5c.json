@@ -1,0 +1,8 @@
+{
+  "family": "varied_density",
+  "description": "Varied-density: n=2500, d=2, k=5",
+  "name": "varied_2d_5c",
+  "n_samples": 2500,
+  "n_features": 2,
+  "n_clusters": 5
+}

@@ -1,0 +1,15 @@
+{
+  "name": "v3_vardensity_blobs_20d_4500_k6",
+  "family": "varying_density_blobs",
+  "n_samples": 4500,
+  "n_features": 20,
+  "n_clusters": 6,
+  "achieved_kmeans_ari": 0.7516951889247425,
+  "target_range": [
+    0.3,
+    0.7
+  ],
+  "in_target_range": false,
+  "calibration_param": 4.0,
+  "calibration_attempt": 9
+}

@@ -1,0 +1,15 @@
+{
+  "name": "v2_blobs_8d_3500_k7",
+  "family": "blobs",
+  "n_samples": 3500,
+  "n_features": 8,
+  "n_clusters": 7,
+  "achieved_kmeans_ari": 0.5229627846819322,
+  "target_range": [
+    0.3,
+    0.7
+  ],
+  "in_target_range": true,
+  "overlap_calibration_value": 0.39999999999999997,
+  "base_seed_attempt": 0
+}

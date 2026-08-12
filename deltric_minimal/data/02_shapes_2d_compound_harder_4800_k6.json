@@ -1,0 +1,11 @@
+{
+  "name": "shapes_2d_compound_harder_4800_k6",
+  "family": "compound_shapes_2d",
+  "n_samples": 4800,
+  "n_features": 2,
+  "n_clusters": 6,
+  "seed": 20260620,
+  "noise": 0.11,
+  "shift": 4.2,
+  "scale": 1.7
+}
