@@ -709,6 +709,8 @@ def component_growth_graph(
     outer_long_ratio: float = 3.0,
     outer_relaxation: float = 0.25,
     outer_transition_width: float = 0.4054651081,
+    edge_rule: Any = None,
+    edge_rule_scope: str = "both",
 ) -> dict[str, Any]:
     """Build and grow the component graph used by the growth backend.
 
@@ -814,6 +816,24 @@ def component_growth_graph(
     hard_allowed = ~(original_hard_mask | projected_hard_mask)
     seed_original_hard_mask = orig_sizes > seed_orig_hard_threshold
     seed_hard_allowed = ~(seed_original_hard_mask | seed_projected_hard_mask)
+
+    # Optional learned edge rule (see ``edge_rule.py``).  It is an *additional*
+    # veto layered on top of the length gates, never a relaxation: an edge the
+    # rule prunes is removed, but an edge it keeps still has to pass the
+    # existing thresholds.  ``edge_rule`` is None by default, so this block is
+    # inert unless a caller opts in.
+    edge_rule_prune_mask = None
+    if edge_rule is not None:
+        edge_rule_prune_mask = np.asarray(
+            edge_rule(X, X_proj, edge_keys, orig_sizes, proj_sizes), dtype=bool
+        )
+        if edge_rule_prune_mask.shape != (len(edge_keys),):
+            raise ValueError(
+                f"edge_rule returned shape {edge_rule_prune_mask.shape}, "
+                f"expected ({len(edge_keys)},)"
+            )
+        if edge_rule_scope not in {"both", "seed", "growth"}:
+            raise ValueError(f"unknown edge_rule_scope: {edge_rule_scope!r}")
 
     directed_uv, directed_vu, local_selectivity, local_degree = (
         _original_knn_directed_relations(X, edge_keys, knn_k)
@@ -951,6 +971,18 @@ def component_growth_graph(
         initial_allowed = seed_hard_allowed
         seed_selective = np.zeros(len(edge_keys), dtype=bool)
         growth_selective = np.zeros(len(edge_keys), dtype=bool)
+    # Apply the learned rule at the single chokepoint where every gate mode has
+    # converged to its final allow-masks.  Vetoing earlier would miss the
+    # relaxed branches, which rebuild their own masks from raw thresholds.
+    if edge_rule_prune_mask is not None:
+        if edge_rule_scope in {"both", "seed"}:
+            initial_allowed = initial_allowed & ~edge_rule_prune_mask
+        if edge_rule_scope in {"both", "growth"}:
+            # Both are consumed by _grow_components: ``hard_allowed`` is the
+            # strict gate, ``growth_allowed`` the relaxed one.
+            hard_allowed = hard_allowed & ~edge_rule_prune_mask
+            growth_allowed = growth_allowed & ~edge_rule_prune_mask
+
     initial_mask = initial_blue & initial_allowed
     state = _grow_components_fast(
         edge_keys, orig_sizes, growth_blue, hard_allowed, initial_mask,
@@ -1004,6 +1036,8 @@ def component_growth_graph(
         "edge_keys": edge_keys,
         "orig_edge_sizes": orig_sizes,
         "projected_edge_sizes": proj_sizes,
+        "edge_rule_prune_mask": edge_rule_prune_mask,
+        "edge_rule_scope": edge_rule_scope if edge_rule is not None else None,
         "original_hard_mask": original_hard_mask,
         "projected_hard_mask": projected_hard_mask,
         "hard_allowed": hard_allowed,
@@ -1234,6 +1268,8 @@ def cluster_tri(
     component_growth_outer_long_ratio=3.0,
     component_growth_outer_relaxation=0.25,
     component_growth_outer_transition_width=0.4054651081,
+    component_growth_edge_rule=None,
+    component_growth_edge_rule_scope="both",
     **kwargs,
 ):
     """Cluster using the component-growth graph.
@@ -1270,6 +1306,8 @@ def cluster_tri(
         outer_long_ratio=component_growth_outer_long_ratio,
         outer_relaxation=component_growth_outer_relaxation,
         outer_transition_width=component_growth_outer_transition_width,
+        edge_rule=component_growth_edge_rule,
+        edge_rule_scope=component_growth_edge_rule_scope,
     )
     labels = _labels_from_components(
         state["labels"], state["edge_counts"], min_cluster_size
