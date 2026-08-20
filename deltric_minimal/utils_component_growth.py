@@ -13,6 +13,7 @@ enabled) projected-space hard limits.
 
 from __future__ import annotations
 
+import heapq
 from typing import Any
 
 import numpy as np
@@ -1242,6 +1243,167 @@ def _merge_component_outliers(
     return merged, diagnostics
 
 
+def _assign_anomalies_dijkstra(
+    labels: np.ndarray,
+    edge_keys: np.ndarray,
+    proj_edge_sizes: np.ndarray,
+    n_points: int,
+    penalty_power: float,
+    stop_ratio: float,
+    max_rounds: int | None = None,
+    snapshot_rounds: set[int] | None = None,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    """Reclaim label ``-1`` points via competitive penalized-Dijkstra search.
+
+    Ported from ``studies/growth_dijkstra_anomaly_assign.py`` (see that
+    module's docstring for the full derivation and the study results that
+    motivated it). This is deliberately a *post*-processing step, run after
+    ``labels`` already reflects every other growth/merge/outlier decision:
+    it never changes which points belong to which cluster among points that
+    already have a cluster, and it never merges two clusters into one -- it
+    only offers already-formed clusters a chance to claim points that were
+    left as noise (``label == -1``).
+
+    Each cluster ``c`` gets a fixed baseline ``avg_c``, the mean length (in
+    *projected* space -- original-space distances concentrate in high
+    dimensions and lose the ability to tell a normal edge from an outlier
+    one) of its own internal edges. A candidate edge's cost when explored
+    from cluster ``c`` is ``length * (length / avg_c) ** penalty_power``,
+    penalizing longer-than-normal hops superlinearly so a chain of several
+    short, in-scale hops beats one long, out-of-scale hop even when the raw
+    lengths sum to the same total. Multi-source Dijkstra runs from every
+    cluster at once, one accepted claim per cluster per round so no cluster
+    races ahead of the others; contested points go to whichever cluster
+    reaches them at lower cumulative penalized cost. A cluster stops
+    reaching once its cheapest remaining option exceeds
+    ``stop_ratio * avg_c`` -- points beyond that stay noise.
+
+    ``snapshot_rounds``, when given, records a copy of the per-point
+    ``owner`` array immediately after each listed round completes (for
+    plotting assignment progress -- see
+    ``studies/plot_growth_dijkstra_anomaly_assign.py``); ``0`` captures the
+    state before any round runs. ``diagnostics["grown_mask"]`` always marks
+    which edges were actually used to claim a point, snapshots or not.
+    """
+    labels = np.asarray(labels, dtype=np.int64)
+    edge_keys = np.asarray(edge_keys, dtype=np.int64)
+    proj_edge_sizes = np.asarray(proj_edge_sizes, dtype=np.float64)
+    n_edges = len(edge_keys)
+    n_clusters = int(labels.max()) + 1 if np.any(labels >= 0) else 0
+    snapshot_rounds = snapshot_rounds or set()
+    diagnostics = {
+        "penalty_power": float(penalty_power),
+        "stop_ratio": float(stop_ratio),
+        "n_anomalies_in": int(np.count_nonzero(labels < 0)),
+        "n_anomalies_out": 0,
+        "n_rounds": 0,
+        "grown_mask": np.zeros(n_edges, dtype=bool),
+        "snapshots": {},
+    }
+    if n_clusters == 0 or diagnostics["n_anomalies_in"] == 0:
+        diagnostics["n_anomalies_out"] = diagnostics["n_anomalies_in"]
+        if 0 in snapshot_rounds:
+            diagnostics["snapshots"][0] = labels.copy()
+        if -1 in snapshot_rounds:
+            diagnostics["snapshots"][-1] = labels.copy()
+        return labels.copy(), diagnostics
+    if max_rounds is None:
+        max_rounds = 4 * n_points + 16
+
+    adjacency: list[list[tuple[int, int]]] = [[] for _ in range(n_points)]
+    for edge_index in range(n_edges):
+        u, v = int(edge_keys[edge_index, 0]), int(edge_keys[edge_index, 1])
+        adjacency[u].append((v, edge_index))
+        adjacency[v].append((u, edge_index))
+
+    # owner[point] is the cluster id that currently claims point (-1 =
+    # anomaly, still unclaimed). Clusters never merge in this stage, so
+    # owner[point] is always the point's final cluster directly.
+    owner = labels.copy()
+
+    # avg[c] is frozen once, from c's own edges, and never updated as c
+    # absorbs anomalies during this stage.
+    sum_len = np.zeros(max(n_clusters, 1), dtype=np.float64)
+    count_len = np.zeros(max(n_clusters, 1), dtype=np.int64)
+    for edge_index in range(n_edges):
+        u, v = edge_keys[edge_index]
+        cu, cv = int(labels[u]), int(labels[v])
+        if cu >= 0 and cu == cv:
+            sum_len[cu] += proj_edge_sizes[edge_index]
+            count_len[cu] += 1
+    global_median = float(np.median(proj_edge_sizes)) if n_edges else 1.0
+    avg = np.where(count_len > 0, sum_len / np.maximum(count_len, 1), global_median)
+
+    heaps: list[list[tuple[float, int, int]]] = [[] for _ in range(n_clusters)]
+    for cluster in range(n_clusters):
+        for node in np.flatnonzero(labels == cluster):
+            for neighbor, edge_index in adjacency[int(node)]:
+                if labels[neighbor] == cluster:
+                    continue
+                length = proj_edge_sizes[edge_index]
+                weight = length * (length / avg[cluster]) ** penalty_power
+                heapq.heappush(heaps[cluster], (weight, neighbor, edge_index))
+    active_roots = {cluster for cluster in range(n_clusters) if heaps[cluster]}
+
+    grown_mask = diagnostics["grown_mask"]
+    snapshots = diagnostics["snapshots"]
+    if 0 in snapshot_rounds:
+        snapshots[0] = owner.copy()
+
+    round_index = 0
+    while round_index < max_rounds and active_roots:
+        root_candidate: dict[int, tuple[float, int, int]] = {}
+        dead_roots = []
+        for root in list(active_roots):
+            heap = heaps[root]
+            while heap:
+                dist, node, edge_index = heap[0]
+                if owner[node] != -1:
+                    heapq.heappop(heap)
+                    continue
+                length = proj_edge_sizes[edge_index]
+                if length > stop_ratio * avg[root]:
+                    heapq.heappop(heap)
+                    continue
+                root_candidate[root] = (dist, node, edge_index)
+                break
+            if not heap:
+                dead_roots.append(root)
+        for root in dead_roots:
+            active_roots.discard(root)
+        if not root_candidate:
+            break
+
+        proposals: dict[int, tuple[float, int, int]] = {}
+        for root, (dist, node, edge_index) in root_candidate.items():
+            current = proposals.get(node)
+            if current is None or dist < current[0]:
+                proposals[node] = (dist, root, edge_index)
+
+        for node, (dist, root, edge_index) in proposals.items():
+            if owner[node] != -1:
+                continue
+            heapq.heappop(heaps[root])
+            owner[node] = root
+            grown_mask[edge_index] = True
+            for neighbor, next_edge_index in adjacency[node]:
+                if owner[neighbor] != -1:
+                    continue
+                length = proj_edge_sizes[next_edge_index]
+                weight = length * (length / avg[root]) ** penalty_power
+                heapq.heappush(heaps[root], (dist + weight, neighbor, next_edge_index))
+
+        round_index += 1
+        if round_index in snapshot_rounds:
+            snapshots[round_index] = owner.copy()
+
+    diagnostics["n_anomalies_out"] = int(np.count_nonzero(owner < 0))
+    diagnostics["n_rounds"] = round_index
+    if -1 in snapshot_rounds:
+        snapshots[-1] = owner.copy()
+    return owner, diagnostics
+
+
 def cluster_tri(
     X, prune_param=1.0, merge_param=None, min_cluster_size=10,
     dim_reduction="umap", back_proj=True, anomaly_sensitivity=0.0,
@@ -1270,6 +1432,9 @@ def cluster_tri(
     component_growth_outer_transition_width=0.4054651081,
     component_growth_edge_rule=None,
     component_growth_edge_rule_scope="both",
+    component_growth_anomaly_reassign=False,
+    component_growth_anomaly_reassign_penalty_power=2.0,
+    component_growth_anomaly_reassign_stop_ratio=3.0,
     **kwargs,
 ):
     """Cluster using the component-growth graph.
@@ -1325,6 +1490,17 @@ def cluster_tri(
         None if component_growth_outlier_limit is None
         else float(component_growth_outlier_limit)
     )
+    if component_growth_anomaly_reassign:
+        # ``state["merged_labels"]`` (set above) is the labeling as of right
+        # before this stage runs -- the "before" side of the before/after
+        # comparison, kept for diagnostics/plotting.
+        labels, anomaly_diagnostics = _assign_anomalies_dijkstra(
+            labels, state["edge_keys"], state["projected_edge_sizes"], len(X),
+            penalty_power=component_growth_anomaly_reassign_penalty_power,
+            stop_ratio=component_growth_anomaly_reassign_stop_ratio,
+        )
+        state["anomaly_reassign"] = anomaly_diagnostics
+        state["anomaly_reassigned_labels"] = labels
     cluster_tri.last_component_growth = state
     cluster_tri.regime_used = "component_growth"
     cluster_tri.fallback_triggered = False

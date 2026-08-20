@@ -42,9 +42,9 @@ export OPENBLAS_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export NUMBA_NUM_THREADS=1
 
-.venv/bin/python -u eval_edge_rule_ari.py \
+.venv/bin/python -u studies/eval_edge_rule_ari.py \
     --data data \
-    --out results/edge_rule_ari \
+    --out studies/results/edge_rule_ari \
     --jobs 24
 
 echo "Done."

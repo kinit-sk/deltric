@@ -12,13 +12,14 @@ Defaults mirror ``run_plot_stages.sh`` growth mode so the baseline is the
 configuration actually in use.
 
 Usage:
-    python eval_edge_rule_ari.py --out results/edge_rule_ari
+    python studies/eval_edge_rule_ari.py --out studies/results/edge_rule_ari
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -26,8 +27,18 @@ import numpy as np
 from sklearn.metrics import adjusted_mutual_info_score, adjusted_rand_score
 from sklearn.preprocessing import StandardScaler
 
-from edge_rule import RULE_KNN_K, depth4_rule, prune_mask_from_features, rule_features
-from utils_component_growth import cluster_tri
+_DELTRIC_MINIMAL_DIR = Path(__file__).resolve().parents[1]
+_DEFAULT_DATA_DIR = _DELTRIC_MINIMAL_DIR / "data"
+sys.path.insert(0, str(_DELTRIC_MINIMAL_DIR.parent))
+
+from deltric_minimal.studies.edge_rule import (  # noqa: E402
+    RULE_KNN_K,
+    depth4_rule,
+    depth6_rule,
+    prune_mask_from_features,
+    rule_features,
+)
+from deltric_minimal.utils_component_growth import cluster_tri  # noqa: E402
 
 # Growth-mode defaults from run_plot_stages.sh.
 BASE_CONFIG = dict(
@@ -63,6 +74,9 @@ VARIANTS = (
     ("rule_both", depth4_rule, "both"),
     ("rule_seed_only", depth4_rule, "seed"),
     ("rule_growth_only", depth4_rule, "growth"),
+    ("rule_depth6_both", depth6_rule, "both"),
+    ("rule_depth6_seed_only", depth6_rule, "seed"),
+    ("rule_depth6_growth_only", depth6_rule, "growth"),
 )
 
 
@@ -174,8 +188,8 @@ def write_csv(rows: list[dict], path: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", default="data", type=Path)
-    parser.add_argument("--out", default="results/edge_rule_ari", type=Path)
+    parser.add_argument("--data", default=_DEFAULT_DATA_DIR, type=Path)
+    parser.add_argument("--out", default=Path("results/edge_rule_ari"), type=Path)
     parser.add_argument("--jobs", type=int, default=1)
     args = parser.parse_args()
 

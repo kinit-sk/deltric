@@ -384,7 +384,7 @@ def build_models(n_rows: int) -> dict:
                 "random_state": 0,
             },
         }
-    for depth in (2, 3, 4):
+    for depth in (2, 3, 4, 6):
         models[f"tree_depth{depth}"] = {
             "kind": "tree",
             "params": {
@@ -624,7 +624,7 @@ def export_rules(
     leaf = max(50, int(0.005 * len(y)))
     spec = transform_spec()
 
-    for depth in (2, 3, 4):
+    for depth in (2, 3, 4, 6):
         model = DecisionTreeClassifier(
             max_depth=depth, min_samples_leaf=leaf, class_weight="balanced", random_state=0
         ).fit(X, y)

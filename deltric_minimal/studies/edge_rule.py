@@ -151,3 +151,132 @@ def depth4_rule(
     return prune_mask_from_features(
         rule_features(X, X_proj, edge_keys, orig_sizes, proj_sizes, k)
     )
+
+
+# ---------------------------------------------------------------------------
+# Depth-6 tree (``studies/edge_rule_extraction.py`` with ``(2, 3, 4, 6)``,
+# exported as ``rules_tree_depth6_raw.py``).  Same raw feature variant and
+# lineage as the depth-4 tree above, but with two more splits and two more
+# features: ``orig_incident_min_ratio`` and ``projected_length``.  Grouped
+# holdout AUC improves from 0.859 to 0.874 and r80 intra-cluster retention
+# from 0.739 to 0.838 (pooled/raw), pending the ARI check that showed the
+# depth-4 tree's edge-level gains did not survive contact with clustering.
+# ---------------------------------------------------------------------------
+
+T6_SCALE_RATIO_ROOT = 1.248494
+T6_INCIDENT_MIN_RATIO = 1.324070
+T6_DENSITY_ASYMMETRY_1 = 0.322869
+T6_DENSITY_LOG_RATIO_1 = 0.624800
+T6_PROJECTED_LENGTH = 11.198782
+T6_DENSITY_LOG_RATIO_2 = 1.710659
+T6_DENSITY_ASYMMETRY_2 = 0.126819
+T6_SCALE_RATIO_INNER = 1.538848
+T6_ORIG_LENGTH = 0.643018
+T6_DENSITY_ASYMMETRY_3 = 0.273857
+
+RULE_FEATURES_DEPTH6 = RULE_FEATURES + ("orig_incident_min_ratio", "projected_length")
+
+
+def _incident_min_ratio(edge_keys: np.ndarray, orig_sizes: np.ndarray) -> np.ndarray:
+    """``orig_length / min(orig_length of edges sharing an endpoint)``.
+
+    Mirrors ``edge_pruning_study._edge_feature_arrays``'s ``orig_incident_min_ratio``:
+    for each edge, the minimum raw length among all *other* edges incident to
+    either endpoint (the union of both endpoints' incident-edge sets, self
+    excluded).  A ratio near 1 means the edge is as short as its shortest
+    neighbour; a large ratio means every locally-incident edge is shorter,
+    which is the "sticks out of a dense cluster" signature.
+    """
+    edge_keys = np.asarray(edge_keys)
+    orig_sizes = np.asarray(orig_sizes, dtype=np.float64)
+    n_edges = len(edge_keys)
+    n_points = int(edge_keys.max()) + 1 if n_edges else 0
+
+    point_to_edges: list[list[int]] = [[] for _ in range(n_points)]
+    for ei, (a, b) in enumerate(edge_keys):
+        point_to_edges[int(a)].append(ei)
+        point_to_edges[int(b)].append(ei)
+
+    incident_min = np.empty(n_edges, dtype=np.float64)
+    for ei, (a, b) in enumerate(edge_keys):
+        incident = set(point_to_edges[int(a)]) | set(point_to_edges[int(b)])
+        incident.discard(ei)
+        if incident:
+            incident_min[ei] = orig_sizes[np.fromiter(incident, dtype=np.int64)].min()
+        else:
+            incident_min[ei] = orig_sizes[ei]
+
+    return orig_sizes / np.maximum(incident_min, 1e-12)
+
+
+def rule_features_depth6(
+    X: np.ndarray,
+    X_proj: np.ndarray,
+    edge_keys: np.ndarray,
+    orig_sizes: np.ndarray,
+    proj_sizes: np.ndarray,
+    k: int = RULE_KNN_K,
+) -> dict[str, np.ndarray]:
+    """The four depth-4 features plus ``orig_incident_min_ratio`` and
+    ``projected_length`` (run-median normalised, like ``orig_length``)."""
+    features = rule_features(X, X_proj, edge_keys, orig_sizes, proj_sizes, k)
+
+    proj_sizes = np.asarray(proj_sizes, dtype=np.float64)
+    proj_median = float(np.median(proj_sizes)) if len(proj_sizes) else 1.0
+    features["projected_length"] = proj_sizes / max(proj_median, 1e-12)
+    features["orig_incident_min_ratio"] = _incident_min_ratio(edge_keys, orig_sizes)
+
+    for name in ("projected_length", "orig_incident_min_ratio"):
+        features[name] = np.nan_to_num(
+            features[name], nan=0.0, posinf=1e6, neginf=-1e6
+        )
+    return features
+
+
+def prune_mask_from_features_depth6(features: dict[str, np.ndarray]) -> np.ndarray:
+    """Depth-6 tree, vectorised.  ``True`` means the rule votes to PRUNE.
+
+    See ``rules_tree_depth6_raw.py`` (``studies/results/edge_rules_depth6/``)
+    for the literal if/elif form this mirrors.
+    """
+    scale_ratio = features["orig_knn_scale_ratio"]
+    orig_length = features["orig_length"]
+    density_log_ratio = features["ambient_projected_density_log_ratio"]
+    asymmetry = features["endpoint_density_asymmetry"]
+    incident_min_ratio = features["orig_incident_min_ratio"]
+    projected_length = features["projected_length"]
+
+    low_scale = scale_ratio <= T6_SCALE_RATIO_ROOT
+    prune_low_scale = (
+        (incident_min_ratio > T6_INCIDENT_MIN_RATIO)
+        & (asymmetry > T6_DENSITY_ASYMMETRY_1)
+        & (density_log_ratio > T6_DENSITY_LOG_RATIO_1)
+    )
+
+    short_projected = projected_length <= T6_PROJECTED_LENGTH
+    tight_asymmetry = asymmetry <= T6_DENSITY_ASYMMETRY_2
+    prune_short_projected = (density_log_ratio > T6_DENSITY_LOG_RATIO_2) & (
+        (tight_asymmetry & (scale_ratio > T6_SCALE_RATIO_INNER))
+        | (
+            ~tight_asymmetry
+            & (orig_length > T6_ORIG_LENGTH)
+            & (asymmetry > T6_DENSITY_ASYMMETRY_3)
+        )
+    )
+    prune_high_scale = np.where(short_projected, prune_short_projected, True)
+
+    return np.where(low_scale, prune_low_scale, prune_high_scale)
+
+
+def depth6_rule(
+    X: np.ndarray,
+    X_proj: np.ndarray,
+    edge_keys: np.ndarray,
+    orig_sizes: np.ndarray,
+    proj_sizes: np.ndarray,
+    k: int = RULE_KNN_K,
+) -> np.ndarray:
+    """Callable matching the ``edge_rule`` hook of ``component_growth_graph``."""
+    return prune_mask_from_features_depth6(
+        rule_features_depth6(X, X_proj, edge_keys, orig_sizes, proj_sizes, k)
+    )
