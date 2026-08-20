@@ -119,7 +119,7 @@ def main() -> None:
         main_labels, edge_keys, proj_sizes, len(X),
         penalty_power=args.penalty_power, stop_ratio=args.stop_ratio,
     )
-    n_rounds = max(dry_diag["n_rounds"], 1)
+    n_rounds = dry_diag["n_rounds"]
     checkpoints = sorted({0, n_rounds // 3, (2 * n_rounds) // 3, n_rounds})
 
     assigned_labels, diag = _assign_anomalies_dijkstra(
@@ -130,12 +130,17 @@ def main() -> None:
 
     background = _segments(X_proj, edge_keys)
     fig, axes = plt.subplots(2, 2, figsize=(12, 12))
-    panel_rounds = checkpoints[:3] + [checkpoints[-1]]
+    # Middle panels reuse checkpoints (always <= the real round count, so
+    # always recorded); the final panel always reads the guaranteed ``-1``
+    # snapshot rather than ``checkpoints[-1]``, since when the run converges
+    # in 0-1 rounds the intermediate checkpoints can collapse together and
+    # no snapshot is ever recorded under the nominal "last round" key.
+    panel_rounds = (checkpoints[:3] + [checkpoints[-1]] * 3)[:3] + [-1]
     panel_titles = [
         f"round {panel_rounds[0]} (main clusters, {diag['n_anomalies_in']} anomalies)",
         f"round {panel_rounds[1]} (assigning)",
         f"round {panel_rounds[2]} (assigning)",
-        f"round {panel_rounds[3]} (final, {diag['n_anomalies_out']} unreached)",
+        f"final (round {n_rounds}, {diag['n_anomalies_out']} unreached)",
     ]
     for ax, round_number, title in zip(axes.flat, panel_rounds, panel_titles):
         _panel(

@@ -57,10 +57,7 @@ LOCAL_KNN_SELECTIVITY_SCOPE="${LOCAL_KNN_SELECTIVITY_SCOPE:-edge}"
   mkdir -p "$OUT"
 
   files=(data/*.npz)
-  if [[ ${#files[@]} -ne 12 ]]; then
-    echo "Expected exactly 12 curated datasets in data, found ${#files[@]}."
-    exit 1
-  fi
+  echo "Running over ${#files[@]} dataset(s) in data/."
 
   PROJECTED_ARGS=()
   if [[ "$PROJECTED_HARD_LIMIT" == "true" ]]; then
@@ -148,10 +145,7 @@ NUCLEUS_PEAK_DENSITY_FLOOR="${NUCLEUS_PEAK_DENSITY_FLOOR:-30}"
 NUCLEUS_PEAK_SPACE="${NUCLEUS_PEAK_SPACE:-original}"
 
 files=(data/*.npz)
-if [[ ${#files[@]} -ne 12 ]]; then
-  echo "Expected exactly 12 curated datasets in data, found ${#files[@]}."
-  exit 1
-fi
+echo "Running over ${#files[@]} dataset(s) in data/."
 
 for f in "${files[@]}"; do
   stem=$(basename "$f" .npz)

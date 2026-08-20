@@ -60,9 +60,18 @@ def _panel(ax, X_proj, background_segments, labels, palette, title, noise_label=
         background_segments, colors="#bdbdbd", linewidths=0.35, alpha=0.25, zorder=1,
     ))
     colors = _point_colors(labels, palette)
-    ax.scatter(X_proj[:, 0], X_proj[:, 1], s=6, c=colors, alpha=0.9, linewidths=0, zorder=3)
+    anomaly_mask = labels < 0
+    ax.scatter(
+        X_proj[~anomaly_mask, 0], X_proj[~anomaly_mask, 1], s=6,
+        c=colors[~anomaly_mask], alpha=0.9, linewidths=0, zorder=3,
+    )
+    ax.scatter(
+        X_proj[anomaly_mask, 0], X_proj[anomaly_mask, 1], s=26,
+        c=colors[anomaly_mask], edgecolors="black", linewidths=0.5,
+        marker="*", alpha=0.95, zorder=4,
+    )
     if noise_label is not None:
-        n_noise = int(np.count_nonzero(labels < 0))
+        n_noise = int(np.count_nonzero(anomaly_mask))
         title = f"{title}\n({n_noise} {noise_label})"
     ax.set_title(title)
     ax.set_aspect("equal", adjustable="box")
