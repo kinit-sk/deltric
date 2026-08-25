@@ -1,0 +1,32 @@
+{
+  "base": "blobs_large_2d_20c",
+  "source_n": 5000,
+  "d": 2,
+  "n_anomaly": 556,
+  "contamination": 0.1001,
+  "kinds": {
+    "uniform": 139,
+    "far": 139,
+    "bridge": 139,
+    "micro": 139
+  },
+  "kind_codes": {
+    "inlier": 0,
+    "uniform": 1,
+    "far": 2,
+    "bridge": 3,
+    "micro": 4,
+    "subspace": 5
+  },
+  "seed": 0,
+  "knn_k": 10,
+  "margin_pct": 95.0,
+  "validation": {
+    "margin": 0.76258,
+    "inlier_knn_median": 0.320092,
+    "anom_nn_dist_min": 0.763259,
+    "anom_nn_dist_median": 2.520509,
+    "margin_relaxed": {},
+    "kinds_dropped": []
+  }
+}

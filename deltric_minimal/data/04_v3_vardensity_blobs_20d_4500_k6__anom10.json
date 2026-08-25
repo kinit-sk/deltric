@@ -1,0 +1,35 @@
+{
+  "base": "04_v3_vardensity_blobs_20d_4500_k6",
+  "source_n": 4500,
+  "d": 20,
+  "n_anomaly": 500,
+  "contamination": 0.1,
+  "kinds": {
+    "uniform": 159,
+    "far": 100,
+    "bridge": 41,
+    "micro": 100,
+    "subspace": 100
+  },
+  "kind_codes": {
+    "inlier": 0,
+    "uniform": 1,
+    "far": 2,
+    "bridge": 3,
+    "micro": 4,
+    "subspace": 5
+  },
+  "seed": 0,
+  "knn_k": 10,
+  "margin_pct": 95.0,
+  "validation": {
+    "margin": 8.513326,
+    "inlier_knn_median": 3.945516,
+    "anom_nn_dist_min": 5.464538,
+    "anom_nn_dist_median": 15.097618,
+    "margin_relaxed": {
+      "bridge": 0.64
+    },
+    "kinds_dropped": []
+  }
+}

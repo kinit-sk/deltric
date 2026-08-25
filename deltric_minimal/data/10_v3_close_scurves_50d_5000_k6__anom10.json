@@ -1,0 +1,33 @@
+{
+  "base": "10_v3_close_scurves_50d_5000_k6",
+  "source_n": 5000,
+  "d": 50,
+  "n_anomaly": 556,
+  "contamination": 0.1001,
+  "kinds": {
+    "uniform": 112,
+    "far": 111,
+    "bridge": 111,
+    "micro": 111,
+    "subspace": 111
+  },
+  "kind_codes": {
+    "inlier": 0,
+    "uniform": 1,
+    "far": 2,
+    "bridge": 3,
+    "micro": 4,
+    "subspace": 5
+  },
+  "seed": 0,
+  "knn_k": 10,
+  "margin_pct": 95.0,
+  "validation": {
+    "margin": 0.895708,
+    "inlier_knn_median": 0.666127,
+    "anom_nn_dist_min": 0.912364,
+    "anom_nn_dist_median": 9.903367,
+    "margin_relaxed": {},
+    "kinds_dropped": []
+  }
+}

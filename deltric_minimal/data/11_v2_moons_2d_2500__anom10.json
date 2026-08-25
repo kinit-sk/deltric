@@ -1,0 +1,32 @@
+{
+  "base": "11_v2_moons_2d_2500",
+  "source_n": 2500,
+  "d": 2,
+  "n_anomaly": 278,
+  "contamination": 0.1001,
+  "kinds": {
+    "uniform": 71,
+    "far": 70,
+    "bridge": 69,
+    "micro": 68
+  },
+  "kind_codes": {
+    "inlier": 0,
+    "uniform": 1,
+    "far": 2,
+    "bridge": 3,
+    "micro": 4,
+    "subspace": 5
+  },
+  "seed": 0,
+  "knn_k": 10,
+  "margin_pct": 95.0,
+  "validation": {
+    "margin": 0.086212,
+    "inlier_knn_median": 0.044349,
+    "anom_nn_dist_min": 0.050858,
+    "anom_nn_dist_median": 0.261212,
+    "margin_relaxed": {},
+    "kinds_dropped": []
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "base": "nested_spheres__d100__n500",
+  "source_n": 500,
+  "d": 100,
+  "n_anomaly": 56,
+  "contamination": 0.1007,
+  "kinds": {
+    "uniform": 23,
+    "far": 11,
+    "bridge": 0,
+    "micro": 11,
+    "subspace": 11
+  },
+  "kind_codes": {
+    "inlier": 0,
+    "uniform": 1,
+    "far": 2,
+    "bridge": 3,
+    "micro": 4,
+    "subspace": 5
+  },
+  "seed": 0,
+  "knn_k": 10,
+  "margin_pct": 95.0,
+  "validation": {
+    "margin": 14.198738,
+    "inlier_knn_median": 9.881014,
+    "anom_nn_dist_min": 19.493143,
+    "anom_nn_dist_median": 24.015415,
+    "margin_relaxed": {},
+    "kinds_dropped": [
+      "bridge"
+    ]
+  }
+}

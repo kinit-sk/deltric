@@ -1,0 +1,35 @@
+{
+  "base": "blobs_varied_density__d100__n2000",
+  "source_n": 2000,
+  "d": 100,
+  "n_anomaly": 222,
+  "contamination": 0.0999,
+  "kinds": {
+    "uniform": 45,
+    "far": 45,
+    "bridge": 44,
+    "micro": 44,
+    "subspace": 44
+  },
+  "kind_codes": {
+    "inlier": 0,
+    "uniform": 1,
+    "far": 2,
+    "bridge": 3,
+    "micro": 4,
+    "subspace": 5
+  },
+  "seed": 0,
+  "knn_k": 10,
+  "margin_pct": 95.0,
+  "validation": {
+    "margin": 11.962618,
+    "inlier_knn_median": 9.010432,
+    "anom_nn_dist_min": 7.72804,
+    "anom_nn_dist_median": 21.375903,
+    "margin_relaxed": {
+      "bridge": 0.64
+    },
+    "kinds_dropped": []
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "base": "blobs_anisotropic__d2__n2000",
+  "source_n": 2000,
+  "d": 2,
+  "n_anomaly": 222,
+  "contamination": 0.0999,
+  "kinds": {
+    "uniform": 56,
+    "far": 56,
+    "bridge": 55,
+    "micro": 55
+  },
+  "kind_codes": {
+    "inlier": 0,
+    "uniform": 1,
+    "far": 2,
+    "bridge": 3,
+    "micro": 4,
+    "subspace": 5
+  },
+  "seed": 0,
+  "knn_k": 10,
+  "margin_pct": 95.0,
+  "validation": {
+    "margin": 0.197054,
+    "inlier_knn_median": 0.069223,
+    "anom_nn_dist_min": 0.198269,
+    "anom_nn_dist_median": 0.487376,
+    "margin_relaxed": {},
+    "kinds_dropped": []
+  }
+}

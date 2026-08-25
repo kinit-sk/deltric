@@ -113,6 +113,12 @@ def run_one(path: Path, penalty_power: float, stop_ratio: float,
     row["noreassign_ari_real"] = float(
         adjusted_rand_score(y[_real], merged_labels[_real])
     )
+    row["noreassign_ari_all"] = float(adjusted_rand_score(y, merged_labels))
+    _asg = merged_labels >= 0
+    row["noreassign_ari_assigned"] = (
+        float(adjusted_rand_score(y[_asg], merged_labels[_asg])) if _asg.any() else float("nan")
+    )
+    row["noreassign_frac_assigned"] = float(_asg.mean())
 
     best = None
     for power, clip in variants:
@@ -129,6 +135,15 @@ def run_one(path: Path, penalty_power: float, stop_ratio: float,
         # ARI regression.
         real = ~y_true_anomaly
         row[f"{tag}_ari_real"] = float(adjusted_rand_score(y[real], labels[real]))
+        # ari_all keeps the noise points in, with -1 as its own label: here
+        # reclaiming a *true* anomaly into a cluster is a penalty, whereas
+        # ari_real cannot see that mistake at all.
+        row[f"{tag}_ari_all"] = float(adjusted_rand_score(y, labels))
+        asg = labels >= 0
+        row[f"{tag}_ari_assigned"] = (
+            float(adjusted_rand_score(y[asg], labels[asg])) if asg.any() else float("nan")
+        )
+        row[f"{tag}_frac_assigned"] = float(asg.mean())
         row[f"{tag}_precision"] = got["precision"]
         row[f"{tag}_recall"] = got["recall"]
         row[f"{tag}_f1"] = got["f1"]

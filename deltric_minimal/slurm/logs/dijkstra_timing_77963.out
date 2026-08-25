@@ -1,0 +1,164 @@
+Job ID:   77963
+Node:     cn13
+PWD:      /mnt/home/maseke423/deltric_minimal
+CPUs:     64
+148 datasets  penalty_power=2.0  stop_ratio=3.0  repeats=5  jobs=32
+  01_shapes_2d_compound_easy_3600_k6     n=3600    base=0.244s  dijkstra=0.018s (+7.3%)  18->2 anomalies, 4 rounds
+  11_v2_moons_2d_2500                    n=2500    base=0.168s  dijkstra=0.013s (+7.5%)  43->10 anomalies, 19 rounds
+  blobs_anisotropic__d2__n500            n=500     base=0.035s  dijkstra=0.003s (+7.1%)  22->2 anomalies, 16 rounds
+  02_shapes_2d_compound_harder_4800_k6   n=4800    base=0.359s  dijkstra=0.025s (+7.1%)  205->8 anomalies, 107 rounds
+  blobs_anisotropic__d50__n500           n=500     base=0.220s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_anisotropic__d2__n2000           n=2000    base=0.140s  dijkstra=0.010s (+7.4%)  158->29 anomalies, 72 rounds
+  59_h2mg_64_50                          n=2048    base=2.133s  dijkstra=0.015s (+0.7%)  1331->8 anomalies, 498 rounds
+  blobs_anisotropic__d50__n2000          n=2000    base=1.985s  dijkstra=0.011s (+0.6%)  14->0 anomalies, 3 rounds
+  blobs_hearts__d2__n500                 n=500     base=0.032s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_hierarchical__d2__n500           n=500     base=0.037s  dijkstra=0.003s (+7.1%)  4->0 anomalies, 2 rounds
+  blobs_anisotropic__d100__n500          n=500     base=0.221s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_hearts__d2__n2000                n=2000    base=0.139s  dijkstra=0.010s (+7.4%)  9->0 anomalies, 8 rounds
+  blobs_hierarchical__d2__n2000          n=2000    base=0.144s  dijkstra=0.011s (+7.5%)  79->12 anomalies, 20 rounds
+  blobs_informative_subspace__d100__n500 n=500     base=0.221s  dijkstra=0.003s (+1.2%)  24->0 anomalies, 10 rounds
+  blobs_informative_subspace__d50__n500  n=500     base=0.215s  dijkstra=0.003s (+1.4%)  9->0 anomalies, 3 rounds
+  blobs_hierarchical__d100__n500         n=500     base=0.225s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_hierarchical__d50__n500          n=500     base=0.223s  dijkstra=0.003s (+1.2%)  1->0 anomalies, 1 rounds
+  blobs_meeples__d2__n500                n=500     base=0.041s  dijkstra=0.003s (+7.0%)  47->47 anomalies, 0 rounds
+  blobs_informative_subspace__d100__n2000 n=2000    base=1.947s  dijkstra=0.014s (+0.7%)  1798->0 anomalies, 342 rounds
+  blobs_meeples__d2__n2000               n=2000    base=0.145s  dijkstra=0.011s (+7.4%)  197->196 anomalies, 1 rounds
+  blobs_meeples__d50__n500               n=500     base=0.220s  dijkstra=0.003s (+1.3%)  43->0 anomalies, 13 rounds
+  blobs_large_2d_20c                     n=5000    base=0.369s  dijkstra=0.033s (+9.0%)  279->27 anomalies, 111 rounds
+  blobs_meeples__d5__n500                n=500     base=0.204s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_separated__d2__n500              n=500     base=0.036s  dijkstra=0.003s (+7.2%)  15->4 anomalies, 6 rounds
+  04_v3_vardensity_blobs_20d_4500_k6     n=4500    base=1.379s  dijkstra=0.033s (+2.4%)  2024->19 anomalies, 235 rounds
+  blobs_separated__d2__n2000             n=2000    base=0.143s  dijkstra=0.011s (+7.9%)  117->14 anomalies, 53 rounds
+  blobs_separated__d100__n500            n=500     base=0.222s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  10_v3_close_scurves_50d_5000_k6        n=5000    base=1.661s  dijkstra=0.031s (+1.9%)  15->0 anomalies, 3 rounds
+  61_h2mg_64_70                          n=2048    base=2.097s  dijkstra=0.014s (+0.7%)  1521->1 anomalies, 383 rounds
+  blobs_informative_subspace__d50__n2000 n=2000    base=1.909s  dijkstra=0.014s (+0.7%)  1290->4 anomalies, 140 rounds
+  blobs_separated__d50__n500             n=500     base=0.220s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_separated__d5__n500              n=500     base=0.206s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_two__d2__n500                    n=500     base=0.037s  dijkstra=0.003s (+7.2%)  19->2 anomalies, 9 rounds
+  blobs_two__d100__n500                  n=500     base=0.216s  dijkstra=0.003s (+1.2%)  2->0 anomalies, 1 rounds
+  blobs_two__d2__n2000                   n=2000    base=0.146s  dijkstra=0.011s (+7.7%)  171->39 anomalies, 74 rounds
+  blobs_two__d50__n500                   n=500     base=0.212s  dijkstra=0.003s (+1.3%)  1->0 anomalies, 1 rounds
+  blobs_anisotropic__d5__n500            n=500     base=0.207s  dijkstra=0.003s (+1.3%)  2->0 anomalies, 2 rounds
+  blobs_hearts__d100__n500               n=500     base=0.219s  dijkstra=0.003s (+1.3%)  87->0 anomalies, 16 rounds
+  blobs_hearts__d5__n500                 n=500     base=0.201s  dijkstra=0.003s (+1.3%)  1->0 anomalies, 1 rounds
+  blobs_two__d5__n500                    n=500     base=0.204s  dijkstra=0.003s (+1.3%)  2->0 anomalies, 1 rounds
+  blobs_informative_subspace__d5__n500   n=500     base=0.208s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_varied_density__d2__n500         n=500     base=0.036s  dijkstra=0.003s (+7.1%)  8->1 anomalies, 3 rounds
+  blobs_meeples__d100__n500              n=500     base=0.221s  dijkstra=0.003s (+1.3%)  94->0 anomalies, 16 rounds
+  blobs_varied_density__d2__n2000        n=2000    base=0.144s  dijkstra=0.011s (+7.4%)  148->35 anomalies, 52 rounds
+  blobs_varied_density__d100__n500       n=500     base=0.210s  dijkstra=0.003s (+1.2%)  2->2 anomalies, 0 rounds
+  blobs_varied_density__d50__n500        n=500     base=0.213s  dijkstra=0.003s (+1.2%)  2->0 anomalies, 2 rounds
+  blobs_varied_density__d5__n500         n=500     base=0.204s  dijkstra=0.003s (+1.3%)  1->0 anomalies, 1 rounds
+  blobs_anisotropic__d100__n2000         n=2000    base=1.960s  dijkstra=0.012s (+0.6%)  89->0 anomalies, 10 rounds
+  blobs_with_noise__d2__n500             n=500     base=0.036s  dijkstra=0.002s (+7.0%)  67->67 anomalies, 0 rounds
+  blobs_with_noise__d2__n2000            n=2000    base=0.143s  dijkstra=0.010s (+7.0%)  331->293 anomalies, 17 rounds
+  blobs_with_noise__d100__n500           n=500     base=0.213s  dijkstra=0.003s (+1.2%)  7->0 anomalies, 3 rounds
+  blobs_hearts__d100__n2000              n=2000    base=1.948s  dijkstra=0.014s (+0.7%)  1809->0 anomalies, 361 rounds
+  blobs_hearts__d50__n2000               n=2000    base=1.934s  dijkstra=0.014s (+0.7%)  1862->0 anomalies, 414 rounds
+  blobs_with_noise__d50__n500            n=500     base=0.212s  dijkstra=0.003s (+1.3%)  6->1 anomalies, 3 rounds
+  blobs_hierarchical__d50__n2000         n=2000    base=2.000s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_with_noise__d5__n500             n=500     base=0.207s  dijkstra=0.003s (+1.4%)  73->2 anomalies, 47 rounds
+  blobs_meeples__d5__n2000               n=2000    base=1.824s  dijkstra=0.011s (+0.6%)  4->0 anomalies, 2 rounds
+  blobs_meeples__d50__n2000              n=2000    base=1.915s  dijkstra=0.015s (+0.8%)  1908->0 anomalies, 728 rounds
+  clusters_on_swiss_roll__d100__n500     n=500     base=0.275s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  clusters_on_swiss_roll__d50__n500      n=500     base=0.231s  dijkstra=0.003s (+1.1%)  2->0 anomalies, 2 rounds
+  clusters_on_swiss_roll__d5__n500       n=500     base=0.198s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_separated__d100__n2000           n=2000    base=1.999s  dijkstra=0.012s (+0.6%)  84->0 anomalies, 15 rounds
+  blobs_hierarchical__d5__n500           n=500     base=0.216s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  helix__d100__n500                      n=500     base=0.212s  dijkstra=0.003s (+1.3%)  1->1 anomalies, 0 rounds
+  blobs_separated__d50__n2000            n=2000    base=1.940s  dijkstra=0.011s (+0.6%)  169->0 anomalies, 21 rounds
+  helix__d50__n500                       n=500     base=0.210s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  14_v2_blobs_8d_3500_k7                 n=3500    base=5.121s  dijkstra=0.020s (+0.4%)  43->1 anomalies, 7 rounds
+  helix__d5__n500                        n=500     base=0.205s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  moons__d2__n500                        n=500     base=0.035s  dijkstra=0.003s (+7.4%)  8->0 anomalies, 6 rounds
+  moons__d2__n2000                       n=2000    base=0.144s  dijkstra=0.011s (+7.4%)  35->5 anomalies, 17 rounds
+  moons__d100__n500                      n=500     base=0.212s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_two__d50__n2000                  n=2000    base=1.951s  dijkstra=0.012s (+0.6%)  472->0 anomalies, 46 rounds
+  blobs_two__d5__n2000                   n=2000    base=1.827s  dijkstra=0.010s (+0.6%)  2->0 anomalies, 1 rounds
+  blobs_anisotropic__d5__n2000           n=2000    base=1.876s  dijkstra=0.011s (+0.6%)  4->0 anomalies, 2 rounds
+  blobs_informative_subspace__d5__n2000  n=2000    base=1.856s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_hierarchical__d100__n2000        n=2000    base=1.971s  dijkstra=0.011s (+0.6%)  1->0 anomalies, 1 rounds
+  moons__d50__n500                       n=500     base=0.210s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  moons__d5__n500                        n=500     base=0.203s  dijkstra=0.003s (+1.3%)  1->0 anomalies, 1 rounds
+  nested_spheres__d2__n500               n=500     base=0.038s  dijkstra=0.003s (+7.8%)  9->0 anomalies, 5 rounds
+  blobs_varied_density__d5__n2000        n=2000    base=1.778s  dijkstra=0.010s (+0.6%)  1->0 anomalies, 1 rounds
+  blobs_meeples__d100__n2000             n=2000    base=1.952s  dijkstra=0.000s (+0.0%)  2000->2000 anomalies, 0 rounds
+  nested_spheres__d100__n500             n=500     base=0.220s  dijkstra=0.003s (+1.2%)  14->0 anomalies, 14 rounds
+  blobs_varied_density__d100__n2000      n=2000    base=1.974s  dijkstra=0.012s (+0.6%)  823->4 anomalies, 164 rounds
+  nested_spheres__d2__n2000              n=2000    base=0.149s  dijkstra=0.012s (+7.8%)  6->0 anomalies, 3 rounds
+  blobs_varied_density__d50__n2000       n=2000    base=1.880s  dijkstra=0.011s (+0.6%)  361->2 anomalies, 36 rounds
+  blobs_separated__d5__n2000             n=2000    base=1.864s  dijkstra=0.010s (+0.6%)  2->0 anomalies, 2 rounds
+  blobs_two__d100__n2000                 n=2000    base=1.929s  dijkstra=0.013s (+0.7%)  1215->1 anomalies, 112 rounds
+  nested_spheres__d50__n500              n=500     base=0.222s  dijkstra=0.003s (+1.2%)  13->0 anomalies, 13 rounds
+  nested_spheres__d5__n500               n=500     base=0.204s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  s_curve__d100__n500                    n=500     base=0.206s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  s_curve__d50__n500                     n=500     base=0.207s  dijkstra=0.003s (+1.3%)  1->0 anomalies, 1 rounds
+  blobs_with_noise__d100__n2000          n=2000    base=1.956s  dijkstra=0.011s (+0.6%)  241->3 anomalies, 76 rounds
+  s_curve__d5__n500                      n=500     base=0.198s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  severed_sphere__d100__n500             n=500     base=0.209s  dijkstra=0.003s (+1.4%)  1->0 anomalies, 1 rounds
+  blobs_with_noise__d5__n2000            n=2000    base=1.850s  dijkstra=0.010s (+0.6%)  295->238 anomalies, 23 rounds
+  blobs_with_noise__d50__n2000           n=2000    base=1.912s  dijkstra=0.011s (+0.6%)  171->12 anomalies, 47 rounds
+  severed_sphere__d50__n500              n=500     base=0.202s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  severed_sphere__d5__n500               n=500     base=0.194s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  clusters_on_swiss_roll__d100__n2000    n=2000    base=1.919s  dijkstra=0.011s (+0.6%)  10->0 anomalies, 6 rounds
+  clusters_on_swiss_roll__d5__n2000      n=2000    base=1.823s  dijkstra=0.011s (+0.6%)  6->0 anomalies, 3 rounds
+  clusters_on_swiss_roll__d50__n2000     n=2000    base=1.871s  dijkstra=0.011s (+0.6%)  12->0 anomalies, 11 rounds
+  swiss_roll__d5__n500                   n=500     base=0.200s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  swiss_roll__d50__n500                  n=500     base=0.234s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  digits                                 n=1797    base=1.755s  dijkstra=0.010s (+0.6%)  41->0 anomalies, 12 rounds
+  swiss_roll__d100__n500                 n=500     base=0.283s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_hearts__d5__n2000                n=2000    base=1.855s  dijkstra=0.011s (+0.6%)  8->0 anomalies, 4 rounds
+  swiss_roll_hole__d50__n500             n=500     base=0.219s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  swiss_roll_hole__d5__n500              n=500     base=0.200s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  swiss_roll_hole__d100__n500            n=500     base=0.270s  dijkstra=0.003s (+1.0%)  1->0 anomalies, 1 rounds
+  02_v3_overlap_blobs_10d_4000_k6        n=4000    base=6.724s  dijkstra=0.025s (+0.4%)  682->0 anomalies, 36 rounds
+  helix__d100__n2000                     n=2000    base=1.950s  dijkstra=0.011s (+0.6%)  10->0 anomalies, 3 rounds
+  helix__d50__n2000                      n=2000    base=1.957s  dijkstra=0.011s (+0.5%)  10->0 anomalies, 4 rounds
+  helix__d5__n2000                       n=2000    base=1.924s  dijkstra=0.011s (+0.6%)  7->0 anomalies, 2 rounds
+  torus__d50__n500                       n=500     base=0.205s  dijkstra=0.003s (+1.3%)  5->0 anomalies, 2 rounds
+  torus__d5__n500                        n=500     base=0.195s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  uniform_hypercube__d2__n500            n=500     base=0.032s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  uniform_hypercube__d2__n2000           n=2000    base=0.129s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  blobs_hearts__d50__n500                n=500     base=0.213s  dijkstra=0.003s (+1.3%)  42->0 anomalies, 12 rounds
+  uniform_hypercube__d100__n500          n=500     base=0.216s  dijkstra=0.003s (+1.5%)  108->0 anomalies, 22 rounds
+  moons__d100__n2000                     n=2000    base=1.954s  dijkstra=0.010s (+0.5%)  1->0 anomalies, 1 rounds
+  uniform_hypercube__d50__n500           n=500     base=0.215s  dijkstra=0.003s (+1.4%)  106->0 anomalies, 17 rounds
+  uniform_hypercube__d5__n500            n=500     base=0.202s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  varied_2d_5c                           n=2500    base=0.180s  dijkstra=0.013s (+7.4%)  248->119 anomalies, 45 rounds
+  moons__d50__n2000                      n=2000    base=1.942s  dijkstra=0.011s (+0.6%)  1->0 anomalies, 1 rounds
+  moons__d5__n2000                       n=2000    base=1.881s  dijkstra=0.011s (+0.6%)  9->0 anomalies, 5 rounds
+  nested_spheres__d100__n2000            n=2000    base=1.945s  dijkstra=0.000s (+0.0%)  2000->2000 anomalies, 0 rounds
+  blobs_hierarchical__d5__n2000          n=2000    base=1.876s  dijkstra=0.011s (+0.6%)  8->0 anomalies, 4 rounds
+  s_curve__d5__n2000                     n=2000    base=1.801s  dijkstra=0.011s (+0.6%)  2->1 anomalies, 1 rounds
+  nested_spheres__d50__n2000             n=2000    base=1.930s  dijkstra=0.011s (+0.6%)  212->1 anomalies, 211 rounds
+  nested_spheres__d5__n2000              n=2000    base=1.875s  dijkstra=0.011s (+0.6%)  4->0 anomalies, 2 rounds
+  s_curve__d50__n2000                    n=2000    base=1.901s  dijkstra=0.011s (+0.6%)  2->0 anomalies, 1 rounds
+  s_curve__d100__n2000                   n=2000    base=1.997s  dijkstra=0.010s (+0.5%)  7->0 anomalies, 4 rounds
+  severed_sphere__d100__n2000            n=2000    base=1.915s  dijkstra=0.010s (+0.5%)  2->0 anomalies, 1 rounds
+  severed_sphere__d5__n2000              n=2000    base=1.846s  dijkstra=0.011s (+0.6%)  26->0 anomalies, 8 rounds
+  severed_sphere__d50__n2000             n=2000    base=1.905s  dijkstra=0.011s (+0.6%)  12->0 anomalies, 4 rounds
+  swiss_roll__d100__n2000                n=2000    base=1.915s  dijkstra=0.011s (+0.6%)  6->0 anomalies, 5 rounds
+  swiss_roll__d5__n2000                  n=2000    base=1.832s  dijkstra=0.011s (+0.6%)  10->0 anomalies, 4 rounds
+  swiss_roll__d50__n2000                 n=2000    base=1.906s  dijkstra=0.011s (+0.6%)  18->2 anomalies, 10 rounds
+  swiss_roll_hole__d50__n2000            n=2000    base=1.865s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  swiss_roll_hole__d5__n2000             n=2000    base=1.839s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+  swiss_roll_hole__d100__n2000           n=2000    base=1.920s  dijkstra=0.011s (+0.6%)  23->0 anomalies, 6 rounds
+  torus__d50__n2000                      n=2000    base=1.868s  dijkstra=0.011s (+0.6%)  11->0 anomalies, 7 rounds
+  torus__d100__n2000                     n=2000    base=1.930s  dijkstra=0.011s (+0.6%)  5->0 anomalies, 3 rounds
+  torus__d5__n2000                       n=2000    base=1.827s  dijkstra=0.010s (+0.6%)  2->0 anomalies, 1 rounds
+  uniform_hypercube__d100__n2000         n=2000    base=1.918s  dijkstra=0.015s (+0.8%)  1982->0 anomalies, 1982 rounds
+  uniform_hypercube__d5__n2000           n=2000    base=1.824s  dijkstra=0.010s (+0.6%)  5->0 anomalies, 3 rounds
+  uniform_hypercube__d50__n2000          n=2000    base=1.872s  dijkstra=0.014s (+0.8%)  1977->0 anomalies, 1977 rounds
+  torus__d100__n500                      n=500     base=0.209s  dijkstra=0.000s (+0.0%)  0->0 anomalies, 0 rounds
+
+=== summary ===
+mean base_seconds_median      0.9791
+mean dijkstra_seconds_median  0.0070
+mean overhead_pct             1.71%
+median overhead_pct           0.59%
+max overhead_pct              9.01%  (blobs_large_2d_20c)
+
+Wrote studies/results/dijkstra_timing/dijkstra_timing.csv
+Wrote studies/results/dijkstra_timing/dijkstra_timing.png
+Done.

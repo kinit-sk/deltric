@@ -1,0 +1,34 @@
+{
+  "base": "varied_2d_5c",
+  "source_n": 2500,
+  "d": 2,
+  "n_anomaly": 278,
+  "contamination": 0.1001,
+  "kinds": {
+    "uniform": 70,
+    "far": 70,
+    "bridge": 69,
+    "micro": 69
+  },
+  "kind_codes": {
+    "inlier": 0,
+    "uniform": 1,
+    "far": 2,
+    "bridge": 3,
+    "micro": 4,
+    "subspace": 5
+  },
+  "seed": 0,
+  "knn_k": 10,
+  "margin_pct": 95.0,
+  "validation": {
+    "margin": 0.878209,
+    "inlier_knn_median": 0.278348,
+    "anom_nn_dist_min": 0.743167,
+    "anom_nn_dist_median": 2.763897,
+    "margin_relaxed": {
+      "bridge": 0.8
+    },
+    "kinds_dropped": []
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "base": "02_shapes_2d_compound_harder_4800_k6",
+  "source_n": 4800,
+  "d": 2,
+  "n_anomaly": 533,
+  "contamination": 0.0999,
+  "kinds": {
+    "uniform": 139,
+    "far": 133,
+    "bridge": 133,
+    "micro": 128
+  },
+  "kind_codes": {
+    "inlier": 0,
+    "uniform": 1,
+    "far": 2,
+    "bridge": 3,
+    "micro": 4,
+    "subspace": 5
+  },
+  "seed": 0,
+  "knn_k": 10,
+  "margin_pct": 95.0,
+  "validation": {
+    "margin": 0.153455,
+    "inlier_knn_median": 0.060035,
+    "anom_nn_dist_min": 0.087917,
+    "anom_nn_dist_median": 1.405719,
+    "margin_relaxed": {},
+    "kinds_dropped": []
+  }
+}

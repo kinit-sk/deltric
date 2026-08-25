@@ -1,0 +1,33 @@
+{
+  "base": "clusters_on_swiss_roll__d50__n500",
+  "source_n": 500,
+  "d": 50,
+  "n_anomaly": 56,
+  "contamination": 0.1007,
+  "kinds": {
+    "uniform": 12,
+    "far": 11,
+    "bridge": 11,
+    "micro": 11,
+    "subspace": 11
+  },
+  "kind_codes": {
+    "inlier": 0,
+    "uniform": 1,
+    "far": 2,
+    "bridge": 3,
+    "micro": 4,
+    "subspace": 5
+  },
+  "seed": 0,
+  "knn_k": 10,
+  "margin_pct": 95.0,
+  "validation": {
+    "margin": 3.519698,
+    "inlier_knn_median": 2.177894,
+    "anom_nn_dist_min": 3.533348,
+    "anom_nn_dist_median": 9.916595,
+    "margin_relaxed": {},
+    "kinds_dropped": []
+  }
+}

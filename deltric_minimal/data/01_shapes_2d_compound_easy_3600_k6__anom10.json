@@ -1,0 +1,32 @@
+{
+  "base": "01_shapes_2d_compound_easy_3600_k6",
+  "source_n": 3600,
+  "d": 2,
+  "n_anomaly": 400,
+  "contamination": 0.1,
+  "kinds": {
+    "uniform": 100,
+    "far": 100,
+    "bridge": 100,
+    "micro": 100
+  },
+  "kind_codes": {
+    "inlier": 0,
+    "uniform": 1,
+    "far": 2,
+    "bridge": 3,
+    "micro": 4,
+    "subspace": 5
+  },
+  "seed": 0,
+  "knn_k": 10,
+  "margin_pct": 95.0,
+  "validation": {
+    "margin": 0.152352,
+    "inlier_knn_median": 0.09117,
+    "anom_nn_dist_min": 0.101045,
+    "anom_nn_dist_median": 2.670942,
+    "margin_relaxed": {},
+    "kinds_dropped": []
+  }
+}
