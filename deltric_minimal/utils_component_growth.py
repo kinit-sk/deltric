@@ -1,9 +1,8 @@
 """Component-growth pruning backend for DelTriC.
 
-This module is deliberately separate from :mod:`utils_pruning`.  It implements the
+This module is deliberately separate from :mod:`utils`.  It implements the
 component-growth experiment as a small, inspectable alternative backend while
-reusing the canonical projection and Delaunay construction from
-``utils_pruning.py``.
+reusing the canonical projection and Delaunay construction from ``utils.py``.
 
 The graph is built in the projected space, but all edge-length statistics used
 for the original-space decisions are computed from ``X``.  An edge survives
