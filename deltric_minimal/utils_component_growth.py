@@ -1243,6 +1243,26 @@ def _merge_component_outliers(
     return merged, diagnostics
 
 
+def _knn_core_distance(X: np.ndarray, k: int) -> np.ndarray:
+    """Mean distance to each point's ``k`` nearest neighbours in *original* space.
+
+    An inverse-density proxy: small value = the point sits in a dense
+    neighbourhood, large value = it sits in a void. Used instead of a
+    radius/kernel density estimate because a fixed-radius ball is empty for
+    every point once the data is 50- or 100-dimensional, whereas the k-th
+    nearest-neighbour distance stays well defined at any dimension (it is the
+    same quantity HDBSCAN calls a core distance).
+
+    The self-match is dropped, so ``k`` genuine neighbours are averaged.
+    """
+    X = np.asarray(X, dtype=np.float64)
+    n = len(X)
+    k = int(max(1, min(k, n - 1)))
+    nearest = NearestNeighbors(n_neighbors=k + 1).fit(X)
+    distances, _ = nearest.kneighbors(X)
+    return distances[:, 1:].mean(axis=1)
+
+
 def _assign_anomalies_dijkstra(
     labels: np.ndarray,
     edge_keys: np.ndarray,
@@ -1250,6 +1270,9 @@ def _assign_anomalies_dijkstra(
     n_points: int,
     penalty_power: float,
     stop_ratio: float,
+    core_distance: np.ndarray | None = None,
+    density_power: float = 0.0,
+    density_clip: bool = False,
     max_rounds: int | None = None,
     snapshot_rounds: set[int] | None = None,
 ) -> tuple[np.ndarray, dict[str, Any]]:
@@ -1288,6 +1311,25 @@ def _assign_anomalies_dijkstra(
     mostly clean, well-separated 2D blobs already close to ARI 1.0. Net: not
     worth raising past 3.0.
 
+    When ``density_power != 0`` and ``core_distance`` is supplied, every
+    projected length is first replaced by an *effective* length
+    ``length * (core_distance[v] / dens_ref[c]) ** density_power``, where ``v``
+    is the candidate point and ``dens_ref[c]`` is the median original-space
+    core distance inside cluster ``c``. Rationale: UMAP preserves topology, not
+    metric, and will happily place a genuinely isolated point next to the
+    manifold it is nearest to -- giving a true anomaly a short projected edge
+    that this stage would otherwise reclaim. The original-space density ratio
+    restores the missing signal: a candidate sitting in a void relative to the
+    claiming cluster gets its edge inflated, so it both loses contests and is
+    more likely to fall outside the ``stop_ratio`` gate and stay noise.
+    Because the effective length feeds the ``(length / avg) ** penalty_power``
+    term as well as the base term, the density ratio effectively acts with
+    exponent ``density_power * (1 + penalty_power)`` on the weight, while
+    acting with exponent ``density_power`` on the stop gate. ``density_clip``
+    makes the correction one-sided (ratios below 1 are clamped to 1), so
+    unusually dense candidates are never made *cheaper* to claim.
+    ``density_power=0`` reproduces the pre-density behaviour exactly.
+
     ``snapshot_rounds``, when given, records a copy of the per-point
     ``owner`` array immediately after each listed round completes (for
     plotting assignment progress -- see
@@ -1301,9 +1343,12 @@ def _assign_anomalies_dijkstra(
     n_edges = len(edge_keys)
     n_clusters = int(labels.max()) + 1 if np.any(labels >= 0) else 0
     snapshot_rounds = snapshot_rounds or set()
+    use_density = density_power != 0.0 and core_distance is not None
     diagnostics = {
         "penalty_power": float(penalty_power),
         "stop_ratio": float(stop_ratio),
+        "density_power": float(density_power) if use_density else 0.0,
+        "density_clip": bool(density_clip) if use_density else False,
         "n_anomalies_in": int(np.count_nonzero(labels < 0)),
         "n_anomalies_out": 0,
         "n_rounds": 0,
@@ -1344,13 +1389,47 @@ def _assign_anomalies_dijkstra(
     global_median = float(np.median(proj_edge_sizes)) if n_edges else 1.0
     avg = np.where(count_len > 0, sum_len / np.maximum(count_len, 1), global_median)
 
+    # Original-space density reference, frozen per cluster exactly like avg[c].
+    # dens_ref[c] is the median core distance over c's own members, so the
+    # ratio core_distance[v] / dens_ref[c] is scale-free: it asks "is v in a
+    # neighbourhood as dense as the inside of c?", which lets a naturally
+    # diffuse cluster keep reaching without also letting a tight cluster reach
+    # into a void. Median (not mean) so a few sparse members do not inflate it.
+    if use_density:
+        core_distance = np.asarray(core_distance, dtype=np.float64)
+        global_core = float(np.median(core_distance)) if len(core_distance) else 1.0
+        dens_ref = np.full(max(n_clusters, 1), global_core, dtype=np.float64)
+        for cluster in range(n_clusters):
+            members = core_distance[labels == cluster]
+            if len(members):
+                dens_ref[cluster] = float(np.median(members))
+        dens_ref = np.maximum(dens_ref, 1e-12)
+
+        def effective_length(length: float, node: int, cluster: int) -> float:
+            """Projected edge length inflated by node's real-space sparsity.
+
+            ``ratio > 1`` means the candidate sits in a sparser region than the
+            claiming cluster's interior -- i.e. a point UMAP placed nearby but
+            that is genuinely isolated in the original space, which is exactly
+            the anomaly the projected length alone cannot see.
+            """
+            ratio = core_distance[node] / dens_ref[cluster]
+            if density_clip and ratio < 1.0:
+                ratio = 1.0
+            return float(length) * float(ratio) ** density_power
+    else:
+        def effective_length(length: float, node: int, cluster: int) -> float:
+            return float(length)
+
     heaps: list[list[tuple[float, int, int]]] = [[] for _ in range(n_clusters)]
     for cluster in range(n_clusters):
         for node in np.flatnonzero(labels == cluster):
             for neighbor, edge_index in adjacency[int(node)]:
                 if labels[neighbor] == cluster:
                     continue
-                length = proj_edge_sizes[edge_index]
+                length = effective_length(
+                    proj_edge_sizes[edge_index], neighbor, cluster
+                )
                 weight = length * (length / avg[cluster]) ** penalty_power
                 heapq.heappush(heaps[cluster], (weight, neighbor, edge_index))
     active_roots = {cluster for cluster in range(n_clusters) if heaps[cluster]}
@@ -1371,7 +1450,7 @@ def _assign_anomalies_dijkstra(
                 if owner[node] != -1:
                     heapq.heappop(heap)
                     continue
-                length = proj_edge_sizes[edge_index]
+                length = effective_length(proj_edge_sizes[edge_index], node, root)
                 if length > stop_ratio * avg[root]:
                     heapq.heappop(heap)
                     continue
@@ -1399,7 +1478,9 @@ def _assign_anomalies_dijkstra(
             for neighbor, next_edge_index in adjacency[node]:
                 if owner[neighbor] != -1:
                     continue
-                length = proj_edge_sizes[next_edge_index]
+                length = effective_length(
+                    proj_edge_sizes[next_edge_index], neighbor, root
+                )
                 weight = length * (length / avg[root]) ** penalty_power
                 heapq.heappush(heaps[root], (dist + weight, neighbor, next_edge_index))
 
@@ -1445,6 +1526,9 @@ def cluster_tri(
     component_growth_anomaly_reassign=False,
     component_growth_anomaly_reassign_penalty_power=2.0,
     component_growth_anomaly_reassign_stop_ratio=3.0,
+    component_growth_anomaly_reassign_density_power=0.0,
+    component_growth_anomaly_reassign_density_k=15,
+    component_growth_anomaly_reassign_density_clip=False,
     **kwargs,
 ):
     """Cluster using the component-growth graph.
@@ -1504,10 +1588,19 @@ def cluster_tri(
         # ``state["merged_labels"]`` (set above) is the labeling as of right
         # before this stage runs -- the "before" side of the before/after
         # comparison, kept for diagnostics/plotting.
+        core_distance = None
+        if component_growth_anomaly_reassign_density_power != 0.0:
+            core_distance = _knn_core_distance(
+                np.asarray(X), component_growth_anomaly_reassign_density_k
+            )
+            state["core_distance"] = core_distance
         labels, anomaly_diagnostics = _assign_anomalies_dijkstra(
             labels, state["edge_keys"], state["projected_edge_sizes"], len(X),
             penalty_power=component_growth_anomaly_reassign_penalty_power,
             stop_ratio=component_growth_anomaly_reassign_stop_ratio,
+            core_distance=core_distance,
+            density_power=component_growth_anomaly_reassign_density_power,
+            density_clip=component_growth_anomaly_reassign_density_clip,
         )
         state["anomaly_reassign"] = anomaly_diagnostics
         state["anomaly_reassigned_labels"] = labels
