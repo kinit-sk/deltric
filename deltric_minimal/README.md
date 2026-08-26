@@ -25,8 +25,8 @@ The default setup is:
 
 ```text
 seed hard limit              0.0
-component growth limit       2.0
-projected growth guard       1.25
+component growth limit       1.5
+projected growth guard       1.0
 initial relation             union original-space 50-NN
 minimum seed size            10 edges
 restore intra-component edges true
