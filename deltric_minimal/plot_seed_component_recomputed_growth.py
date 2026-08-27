@@ -134,6 +134,7 @@ def _gomory_hu_joint_cut_mask(
     *,
     cut_size: int,
     min_component_points: int,
+    removable_mask: np.ndarray | None = None,
     hull_ratio_skip_threshold: float = 0.0,
     triangles: np.ndarray | None = None,
     edge_sizes: np.ndarray | None = None,
@@ -141,7 +142,10 @@ def _gomory_hu_joint_cut_mask(
     """Return eligible fundamental Gomory--Hu cuts with size <= cut_size.
 
     Both sides must contain ``min_component_points`` graph points.  That
-    excludes cuts which only detach outliers or small nested islands.
+    excludes cuts which only detach outliers or small nested islands.  When
+    ``removable_mask`` is supplied, only those retained edges may be cut;
+    every other retained edge has capacity ``cut_size + 1`` and is therefore
+    excluded from every eligible cut.
     """
     if min_component_points < 1:
         raise ValueError("min_component_points must be positive")
@@ -162,6 +166,13 @@ def _gomory_hu_joint_cut_mask(
             "eligible_tree_cut_count": 0,
             "rejected_small_side_tree_cut_count": 0, "pruned_edge_count": 0,
         }
+
+    if removable_mask is not None:
+        removable_mask = np.asarray(removable_mask, dtype=bool)
+        if removable_mask.shape != (len(edge_keys),):
+            raise ValueError("removable_mask must contain one value per edge")
+        if np.any(removable_mask & ~retained_mask):
+            raise ValueError("removable_mask may contain only retained edges")
 
     import networkx as nx
 
@@ -215,8 +226,13 @@ def _gomory_hu_joint_cut_mask(
             continue
         graph = nx.Graph()
         graph.add_nodes_from(map(int, nodes))
+        protected_capacity = int(cut_size) + 1
         graph.add_edges_from(
-            (int(edge_keys[index, 0]), int(edge_keys[index, 1]), {"capacity": 1})
+            (
+                int(edge_keys[index, 0]), int(edge_keys[index, 1]),
+                {"capacity": 1 if removable_mask is None or removable_mask[index]
+                 else protected_capacity},
+            )
             for index in edge_indices
         )
         tree = nx.gomory_hu_tree(graph, capacity="capacity")
@@ -235,6 +251,8 @@ def _gomory_hu_joint_cut_mask(
             on_left_u = np.isin(edge_keys[edge_indices, 0], list(left_side))
             on_left_v = np.isin(edge_keys[edge_indices, 1], list(left_side))
             cut_edges = edge_indices[on_left_u != on_left_v]
+            if removable_mask is not None:
+                cut_edges = cut_edges[removable_mask[cut_edges]]
             if len(cut_edges):
                 pruned_mask[cut_edges] = True
                 eligible_cuts += 1
@@ -258,6 +276,140 @@ def _gomory_hu_joint_cut_mask(
         )),
         "skipped_hull_ratio_component_count": int(sum(
             item["skipped_hull_ratio"] for item in component_summaries
+        )),
+        "eligible_tree_cut_count": int(sum(
+            item["eligible_tree_cut_count"] for item in component_summaries
+        )),
+        "rejected_small_side_tree_cut_count": int(sum(
+            item["rejected_small_side_tree_cut_count"] for item in component_summaries
+        )),
+        "pruned_edge_count": int(np.count_nonzero(pruned_mask)),
+        "largest_components": component_summaries[:5],
+    }
+
+
+def _gomory_hu_contracted_candidate_cut_mask(
+    edge_keys: np.ndarray,
+    candidate_mask: np.ndarray,
+    seed_labels: np.ndarray,
+    *,
+    cut_size: int,
+    min_component_points: int,
+) -> tuple[np.ndarray, dict]:
+    """Find low-cardinality GH cuts after contracting original seed components.
+
+    The graph contains *only* candidate growth-related edges. Every original
+    seed component is contracted to one weighted vertex, so seed-internal
+    edges never enter a max-flow calculation. A tree cut is evaluated using
+    the number of original points on both sides.
+    """
+    if min_component_points < 1:
+        raise ValueError("min_component_points must be positive")
+    candidate_mask = np.asarray(candidate_mask, dtype=bool)
+    if candidate_mask.shape != (len(edge_keys),):
+        raise ValueError("candidate_mask must contain one value per edge")
+    pruned_mask = np.zeros(len(edge_keys), dtype=bool)
+    if cut_size <= 0 or not np.any(candidate_mask):
+        return pruned_mask, {
+            "enabled": bool(cut_size > 0), "graph_mode": "contracted_candidates",
+            "cut_size": int(cut_size), "min_component_points": int(min_component_points),
+            "component_count": 0, "contracted_node_count": 0,
+            "skipped_too_small_component_count": 0,
+            "eligible_tree_cut_count": 0,
+            "rejected_small_side_tree_cut_count": 0, "pruned_edge_count": 0,
+            "largest_components": [],
+        }
+
+    import networkx as nx
+
+    seed_labels = np.asarray(seed_labels, dtype=np.int64)
+    seed_sizes = np.bincount(seed_labels)
+    candidate_indices = np.flatnonzero(candidate_mask)
+    seed_u = seed_labels[edge_keys[candidate_indices, 0]]
+    seed_v = seed_labels[edge_keys[candidate_indices, 1]]
+    involved_seeds = np.unique(np.concatenate((seed_u, seed_v)))
+    contracted_index = np.full(len(seed_sizes), -1, dtype=np.int64)
+    contracted_index[involved_seeds] = np.arange(len(involved_seeds), dtype=np.int64)
+    candidate_u = contracted_index[seed_u]
+    candidate_v = contracted_index[seed_v]
+    cross_seed = candidate_u != candidate_v
+    candidate_indices = candidate_indices[cross_seed]
+    candidate_u = candidate_u[cross_seed]
+    candidate_v = candidate_v[cross_seed]
+    node_weights = seed_sizes[involved_seeds].astype(np.int64, copy=False)
+    if not len(candidate_indices):
+        return pruned_mask, {
+            "enabled": True, "graph_mode": "contracted_candidates",
+            "cut_size": int(cut_size), "min_component_points": int(min_component_points),
+            "component_count": 0, "contracted_node_count": int(len(involved_seeds)),
+            "skipped_too_small_component_count": 0,
+            "eligible_tree_cut_count": 0,
+            "rejected_small_side_tree_cut_count": 0, "pruned_edge_count": 0,
+            "largest_components": [],
+        }
+
+    graph = nx.Graph()
+    graph.add_nodes_from(range(len(involved_seeds)))
+    for left, right in zip(candidate_u, candidate_v):
+        left, right = int(left), int(right)
+        if graph.has_edge(left, right):
+            graph[left][right]["capacity"] += 1
+        else:
+            graph.add_edge(left, right, capacity=1)
+
+    component_summaries: list[dict] = []
+    for nodes in nx.connected_components(graph):
+        nodes = np.fromiter(nodes, dtype=np.int64)
+        point_count = int(np.sum(node_weights[nodes]))
+        component_edge_mask = np.isin(candidate_u, nodes) & np.isin(candidate_v, nodes)
+        component_edge_indices = candidate_indices[component_edge_mask]
+        if point_count < 2 * min_component_points:
+            component_summaries.append({
+                "edge_count": int(len(component_edge_indices)), "point_count": point_count,
+                "contracted_point_count": int(len(nodes)), "skipped_too_small": True,
+                "eligible_tree_cut_count": 0,
+                "rejected_small_side_tree_cut_count": 0, "pruned_edge_count": 0,
+            })
+            continue
+        tree = nx.gomory_hu_tree(graph.subgraph(nodes).copy(), capacity="capacity")
+        eligible_cuts = 0
+        rejected_small_side_cuts = 0
+        before = int(np.count_nonzero(pruned_mask[component_edge_indices]))
+        for left, right, data in list(tree.edges(data=True)):
+            if int(round(data["weight"])) > cut_size:
+                continue
+            tree.remove_edge(left, right)
+            left_side = np.fromiter(nx.node_connected_component(tree, left), dtype=np.int64)
+            tree.add_edge(left, right, **data)
+            left_points = int(np.sum(node_weights[left_side]))
+            if min(left_points, point_count - left_points) < min_component_points:
+                rejected_small_side_cuts += 1
+                continue
+            on_left = np.zeros(len(involved_seeds), dtype=bool)
+            on_left[left_side] = True
+            cut_edges = component_edge_indices[
+                on_left[candidate_u[component_edge_mask]]
+                != on_left[candidate_v[component_edge_mask]]
+            ]
+            if len(cut_edges):
+                pruned_mask[cut_edges] = True
+                eligible_cuts += 1
+        component_summaries.append({
+            "edge_count": int(len(component_edge_indices)), "point_count": point_count,
+            "contracted_point_count": int(len(nodes)), "skipped_too_small": False,
+            "eligible_tree_cut_count": eligible_cuts,
+            "rejected_small_side_tree_cut_count": rejected_small_side_cuts,
+            "pruned_edge_count": int(np.count_nonzero(pruned_mask[component_edge_indices])) - before,
+        })
+
+    component_summaries.sort(key=lambda item: item["edge_count"], reverse=True)
+    return pruned_mask, {
+        "enabled": True, "graph_mode": "contracted_candidates",
+        "cut_size": int(cut_size), "min_component_points": int(min_component_points),
+        "component_count": len(component_summaries),
+        "contracted_node_count": int(len(involved_seeds)),
+        "skipped_too_small_component_count": int(sum(
+            item["skipped_too_small"] for item in component_summaries
         )),
         "eligible_tree_cut_count": int(sum(
             item["eligible_tree_cut_count"] for item in component_summaries
@@ -711,6 +863,9 @@ def _sequential_growth(edge_keys: np.ndarray, lengths: np.ndarray,
 
     final_component = np.array([find(seed_labels[point]) for point in range(n_points)], dtype=np.int64)
     final_active_point = active[final_component]
+    # A growth-added point was not part of an initially large seed component,
+    # but became part of an active component through growth.
+    growth_added_points = ~initially_large[seed_labels] & final_active_point
     return {
         "initially_large_seed_components": initially_large,
         "first_seen_mask": first_seen,
@@ -724,6 +879,7 @@ def _sequential_growth(edge_keys: np.ndarray, lengths: np.ndarray,
         "first_seen_panel4_display": np.clip(first_outer_q25_ratio, 0.0, 2.0),
         "accepted_growth_mask": accepted,
         "accepted_growth_step": accepted_step,
+        "growth_added_point_mask": growth_added_points,
         "final_component": final_component,
         "final_active_point": final_active_point,
         "growth_round_count": int(round_index),
@@ -772,6 +928,16 @@ def main() -> None:
         help=(
             "Skip Gomory--Hu pruning for a component when its weighted "
             "outer-hull/non-hull ratio reaches this value; 0 disables the gate."
+        ),
+    )
+    parser.add_argument(
+        "--gomory-hu-growth-edges-only",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Contract original seed components, then build Gomory--Hu only "
+            "from accepted growth edges and restored edges incident to a "
+            "growth-added point. Disable to run GH on every final edge."
         ),
     )
     parser.add_argument(
@@ -876,14 +1042,39 @@ def main() -> None:
             "skipped_component_mask": np.zeros(len(edge_keys), dtype=bool),
             "metrics": {},
         }
-    gomory_hu_pruned_mask, gomory_hu_metrics = _gomory_hu_joint_cut_mask(
-        edge_keys, bridge_base_mask,
-        cut_size=args.gomory_hu_cut_size,
-        min_component_points=args.gomory_hu_min_component_points,
-        hull_ratio_skip_threshold=args.gomory_hu_hull_ratio_skip_threshold,
-        triangles=np.asarray(state["triangles"], dtype=np.int64),
-        edge_sizes=lengths,
+    gomory_graph_mask = bridge_base_mask
+    growth_added_points = growth["growth_added_point_mask"]
+    enriched_growth_incident_mask = (
+        restored_intra_component_mask
+        & (growth_added_points[edge_keys[:, 0]]
+           | growth_added_points[edge_keys[:, 1]])
     )
+    gomory_removable_mask = (
+        growth["accepted_growth_mask"] | enriched_growth_incident_mask
+        if args.gomory_hu_growth_edges_only else None
+    )
+    if args.gomory_hu_growth_edges_only:
+        if args.gomory_hu_hull_ratio_skip_threshold > 0.0:
+            raise ValueError(
+                "the hull-ratio GH gate is unavailable with contracted "
+                "growth-edge candidate cuts; set it to 0"
+            )
+        gomory_hu_pruned_mask, gomory_hu_metrics = (
+            _gomory_hu_contracted_candidate_cut_mask(
+                edge_keys, gomory_removable_mask, seed_labels,
+                cut_size=args.gomory_hu_cut_size,
+                min_component_points=args.gomory_hu_min_component_points,
+            )
+        )
+    else:
+        gomory_hu_pruned_mask, gomory_hu_metrics = _gomory_hu_joint_cut_mask(
+            edge_keys, gomory_graph_mask,
+            cut_size=args.gomory_hu_cut_size,
+            min_component_points=args.gomory_hu_min_component_points,
+            hull_ratio_skip_threshold=args.gomory_hu_hull_ratio_skip_threshold,
+            triangles=np.asarray(state["triangles"], dtype=np.int64),
+            edge_sizes=lengths,
+        )
     removed_bridge_mask = redundancy_state["pruned_mask"] | gomory_hu_pruned_mask
     final_retained_mask = bridge_base_mask & ~removed_bridge_mask
     seen = growth["first_seen_mask"]
@@ -926,6 +1117,12 @@ def main() -> None:
         initial_mask=initial_mask, seed_labels=seed_labels,
         seed_edge_counts=seed_edge_counts, pre_redundancy_mask=pre_redundancy_mask,
         bridge_base_mask=bridge_base_mask,
+        gomory_graph_mask=gomory_graph_mask,
+        gomory_removable_mask=(
+            gomory_removable_mask if gomory_removable_mask is not None
+            else np.zeros(len(edge_keys), dtype=bool)
+        ),
+        enriched_growth_incident_mask=enriched_growth_incident_mask,
         restored_intra_component_mask=restored_intra_component_mask,
         final_retained_mask=final_retained_mask,
         edge_redundancy=redundancy_state["redundancy"],
@@ -946,14 +1143,20 @@ def main() -> None:
         "gomory_hu_cut_size": args.gomory_hu_cut_size,
         "gomory_hu_min_component_points": args.gomory_hu_min_component_points,
         "gomory_hu_hull_ratio_skip_threshold": args.gomory_hu_hull_ratio_skip_threshold,
+        "gomory_hu_growth_edges_only": args.gomory_hu_growth_edges_only,
         "restore_intra_component_edges": args.restore_intra_component_edges,
         "initial_relation": args.initial_relation, "knn_k": args.component_growth_knn,
         "seed_edge_count": int(np.count_nonzero(initial_mask)),
         "large_seed_component_count": int(np.count_nonzero(large_seed)),
         "historical_boundary_edge_count": int(np.count_nonzero(seen)),
         "accepted_growth_edge_count": int(np.count_nonzero(growth["accepted_growth_mask"])),
+        "growth_added_point_count": int(np.count_nonzero(growth_added_points)),
         "restored_intra_component_edge_count": int(np.count_nonzero(
             restored_intra_component_mask,
+        )),
+        "gomory_removable_edge_count": int(np.count_nonzero(
+            gomory_removable_mask if gomory_removable_mask is not None
+            else gomory_graph_mask,
         )),
         "bridge_analysis_edge_count": int(np.count_nonzero(bridge_base_mask)),
         "final_retained_edge_count": int(np.count_nonzero(final_retained_mask)),

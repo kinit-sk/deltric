@@ -1,12 +1,13 @@
-# Minimal DelTriC component-growth plots
+# Minimal DelTriC component-growth diagnostics
 
-This directory is a self-contained copy of the component-growth plotting
-workflow and the 12 curated input datasets.  The graph is built in UMAP space;
-edge-size decisions are computed in the original space.
+This self-contained directory reproduces the effective default workflow in
+the development `run_plot_stages.sh`, without the legacy pruning pipeline or
+inactive growth variants.
+
+It uses UMAP only to construct the Delaunay topology.  All primary edge-size
+decisions are computed in the original, standardized feature space.
 
 ## Setup
-
-Install the required Conda environment:
 
 ```bash
 conda env create -f environment.yml
@@ -15,28 +16,35 @@ conda activate deltric-minimal
 
 ## Run
 
-Run every dataset with the current defaults:
-
 ```bash
+cd deltric_minimal
 ./run_plot_stages.sh
 ```
 
-Plots are written under `results/prune_stages_component_growth/` by default.
-All options are environment variables; for example:
+The default setup is:
 
-```bash
-UMAP_N_NEIGHBORS=30 GROWTH_KNN=50 HARD_LIMIT=1.2 ./run_plot_stages.sh
+```text
+seed hard limit              0.0
+component growth limit       1.5
+projected growth guard       1.0
+initial relation             union original-space 50-NN
+minimum seed size            10 edges
+restore intra-component edges true
+Gomory--Hu cut size          6
+minimum GH side size         10 points
 ```
 
-The runnable files are:
+The final stage restores original Delaunay edges whose endpoints belong to
+the same completed growth component, then removes eligible Gomory--Hu cuts.
+Set `GOMORY_HU_HULL_RATIO_SKIP_THRESHOLD` above zero to protect non-compact
+components: GH pruning is skipped when their weighted outer-hull/non-hull
+ratio reaches that value.  The default `0.0` disables this protection gate.
 
-- `run_plot_stages.sh` — batch launcher and exposed parameters.
-- `plot_prunning_stages_2x2_growth.py` — visualization wrapper; it calls the
-  same component-growth backend used by the algorithm.
-- `utils_pruning.py` — canonical UMAP, triangulation, and original-space
-  edge-length helpers (renamed from `utils.py`).
-- `utils_component_growth.py` — seed construction and component-growth logic.
-- `data/` — the 12 input `.npz` datasets and their summaries.
+All exposed controls are environment variables.  For example:
 
-No project-relative import is required.  When a Conda environment is active,
-the launcher uses it directly.
+```bash
+GOMORY_HU_HULL_RATIO_SKIP_THRESHOLD=0.075 ./run_plot_stages.sh
+```
+
+The bundled data intentionally excludes the 1000-dimensional dataset; the
+launcher therefore expects 12 curated `.npz` inputs.

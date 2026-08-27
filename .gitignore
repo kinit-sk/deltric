@@ -1,15 +1,16 @@
 # Python-generated files
 __pycache__/
-*.py[oc]
+*.py[cod]
 build/
 dist/
 wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
 
 # Generated results and slurm logs (regenerable, not checked in)
+results/
 deltric_minimal/results/
 deltric_minimal/studies/results/
 slurm/logs/
