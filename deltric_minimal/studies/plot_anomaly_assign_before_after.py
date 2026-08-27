@@ -82,8 +82,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
-    parser.add_argument("--penalty-power", type=float, default=2.0)
-    parser.add_argument("--stop-ratio", type=float, default=3.0)
+    parser.add_argument("--penalty-power", type=float, default=3.0)
+    parser.add_argument("--reach", type=float, default=25.0)
     args = parser.parse_args()
 
     npz = np.load(args.data, allow_pickle=False)
@@ -94,7 +94,7 @@ def main() -> None:
         X, **BASE_CONFIG,
         component_growth_anomaly_reassign=True,
         component_growth_anomaly_reassign_penalty_power=args.penalty_power,
-        component_growth_anomaly_reassign_stop_ratio=args.stop_ratio,
+        component_growth_anomaly_reassign_reach=args.reach,
     )
     graph_state = cluster_tri.last_component_growth
     main_labels = graph_state["merged_labels"]

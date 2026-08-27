@@ -1494,6 +1494,148 @@ def _assign_anomalies_dijkstra(
     return owner, diagnostics
 
 
+def _assign_anomalies_cost_gate(
+    labels: np.ndarray,
+    edge_keys: np.ndarray,
+    proj_edge_sizes: np.ndarray,
+    n_points: int,
+    penalty_power: float,
+    reach: float,
+    core_distance: np.ndarray | None = None,
+    density_power: float = 0.0,
+    density_clip: bool = False,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    """Reclaim label ``-1`` points via a whole-path cost-budgeted Dijkstra.
+
+    Ported from ``studies/anomaly_cost_gate_study.cost_gate`` (see that
+    module and ``studies/density_fixed_formula_viz.py`` for the full
+    derivation and the study results that motivated it). Supersedes
+    ``_assign_anomalies_dijkstra`` as the production reclamation stage: that
+    older gate accumulates a penalized cost into ``dist`` but only ever
+    tests a *single edge* against ``stop_ratio`` on raw length, so
+    ``penalty_power`` was inert (a monotone transform of length does not
+    change pop order) and one wrongly claimed point became a launchpad for
+    the next. Here every hop's price is measured in "typical edge for this
+    cluster" units and the *whole accumulated path* is budgeted against
+    ``reach``, with a single global heap (true multi-source Dijkstra)
+    instead of one claim per cluster per round::
+
+        r    = (length * rho(v, c) ** density_power) / avg_c   # 1.0 == a typical edge for c
+        cost = r ** (1 + penalty_power)                        # this hop's price, in hops
+        claim v iff sum(cost along path) <= reach
+
+    ``rho(v, c) = core_distance[v] / median(core_distance over members of
+    c)``, where ``core_distance`` is mean distance to the ``k`` nearest
+    neighbours in *original* space (see ``_knn_core_distance``). UMAP
+    preserves topology, not metric, and will happily place a genuinely
+    isolated point next to the manifold it is nearest to, giving a true
+    anomaly a short projected edge; ``rho > 1`` means "v sits in a void
+    relative to the inside of c", which is exactly the signal projected
+    length alone cannot see. ``density_clip`` makes the correction one-sided
+    (ratios below 1 clamp to 1), so unusually dense candidates are never made
+    cheaper to claim. ``density_power=0`` (or no ``core_distance``) drops the
+    density term entirely.
+
+    Study defaults across the numbered ground-truth-anomaly datasets:
+    ``penalty_power=3.0``, ``reach=25.0``, ``density_power=4.0`` -- this
+    variant (``fix_p3_r25_q4``) had the best F1/ARI tradeoff of every gate
+    tried, beating both the shipped edge gate and the density-free cost gate.
+    """
+    labels = np.asarray(labels, dtype=np.int64)
+    edge_keys = np.asarray(edge_keys, dtype=np.int64)
+    proj_edge_sizes = np.asarray(proj_edge_sizes, dtype=np.float64)
+    n_edges = len(edge_keys)
+    n_clusters = int(labels.max()) + 1 if np.any(labels >= 0) else 0
+    use_density = density_power != 0.0 and core_distance is not None
+    diagnostics: dict[str, Any] = {
+        "penalty_power": float(penalty_power),
+        "reach": float(reach),
+        "density_power": float(density_power) if use_density else 0.0,
+        "density_clip": bool(density_clip) if use_density else False,
+        "n_anomalies_in": int(np.count_nonzero(labels < 0)),
+        "n_anomalies_out": 0,
+        "n_claims": 0,
+        "grown_mask": np.zeros(n_edges, dtype=bool),
+    }
+    if n_clusters == 0 or diagnostics["n_anomalies_in"] == 0:
+        diagnostics["n_anomalies_out"] = diagnostics["n_anomalies_in"]
+        return labels.copy(), diagnostics
+
+    adjacency: list[list[tuple[int, int]]] = [[] for _ in range(n_points)]
+    for edge_index in range(n_edges):
+        u, v = int(edge_keys[edge_index, 0]), int(edge_keys[edge_index, 1])
+        adjacency[u].append((v, edge_index))
+        adjacency[v].append((u, edge_index))
+
+    # avg[c] is frozen once, from c's own edges: the "typical hop" unit r is
+    # measured against.
+    sum_len = np.zeros(max(n_clusters, 1), dtype=np.float64)
+    count_len = np.zeros(max(n_clusters, 1), dtype=np.int64)
+    for edge_index in range(n_edges):
+        u, v = edge_keys[edge_index]
+        cu, cv = int(labels[u]), int(labels[v])
+        if cu >= 0 and cu == cv:
+            sum_len[cu] += proj_edge_sizes[edge_index]
+            count_len[cu] += 1
+    global_median = float(np.median(proj_edge_sizes)) if n_edges else 1.0
+    avg = np.maximum(
+        np.where(count_len > 0, sum_len / np.maximum(count_len, 1), global_median),
+        1e-12,
+    )
+
+    # Original-space density reference, frozen per cluster: dens_ref[c] is the
+    # median core distance over c's own members, so rho(v, c) is scale-free.
+    if use_density:
+        core_distance = np.asarray(core_distance, dtype=np.float64)
+        global_core = float(np.median(core_distance)) if len(core_distance) else 1.0
+        dens_ref = np.full(max(n_clusters, 1), global_core, dtype=np.float64)
+        for cluster in range(n_clusters):
+            members = core_distance[labels == cluster]
+            if len(members):
+                dens_ref[cluster] = float(np.median(members))
+        dens_ref = np.maximum(dens_ref, 1e-12)
+
+        def relative(edge_index: int, node: int, cluster: int) -> float:
+            ratio = core_distance[node] / dens_ref[cluster]
+            if density_clip and ratio < 1.0:
+                ratio = 1.0
+            return (proj_edge_sizes[edge_index] * ratio) / avg[cluster]
+    else:
+        def relative(edge_index: int, node: int, cluster: int) -> float:
+            return proj_edge_sizes[edge_index] / avg[cluster]
+
+    owner = labels.copy()
+    grown_mask = diagnostics["grown_mask"]
+    exponent = 1.0 + penalty_power
+
+    heap: list[tuple[float, int, int, int]] = []
+    for cluster in range(n_clusters):
+        for node in np.flatnonzero(labels == cluster):
+            for neighbor, edge_index in adjacency[int(node)]:
+                if labels[neighbor] == cluster:
+                    continue
+                cost = relative(edge_index, int(neighbor), cluster) ** exponent
+                if cost <= reach:
+                    heapq.heappush(heap, (cost, int(neighbor), cluster, edge_index))
+
+    while heap:
+        dist, node, cluster, edge_index = heapq.heappop(heap)
+        if owner[node] != -1:
+            continue
+        owner[node] = cluster
+        grown_mask[edge_index] = True
+        diagnostics["n_claims"] += 1
+        for neighbor, next_edge_index in adjacency[node]:
+            if owner[neighbor] != -1:
+                continue
+            nxt = dist + relative(next_edge_index, int(neighbor), cluster) ** exponent
+            if nxt <= reach:
+                heapq.heappush(heap, (nxt, int(neighbor), cluster, next_edge_index))
+
+    diagnostics["n_anomalies_out"] = int(np.count_nonzero(owner < 0))
+    return owner, diagnostics
+
+
 def cluster_tri(
     X, prune_param=1.0, merge_param=None, min_cluster_size=10,
     dim_reduction="umap", back_proj=True, anomaly_sensitivity=0.0,
@@ -1523,9 +1665,9 @@ def cluster_tri(
     component_growth_edge_rule=None,
     component_growth_edge_rule_scope="both",
     component_growth_anomaly_reassign=False,
-    component_growth_anomaly_reassign_penalty_power=2.0,
-    component_growth_anomaly_reassign_stop_ratio=3.0,
-    component_growth_anomaly_reassign_density_power=0.0,
+    component_growth_anomaly_reassign_penalty_power=3.0,
+    component_growth_anomaly_reassign_reach=25.0,
+    component_growth_anomaly_reassign_density_power=4.0,
     component_growth_anomaly_reassign_density_k=15,
     component_growth_anomaly_reassign_density_clip=False,
     **kwargs,
@@ -1593,10 +1735,10 @@ def cluster_tri(
                 np.asarray(X), component_growth_anomaly_reassign_density_k
             )
             state["core_distance"] = core_distance
-        labels, anomaly_diagnostics = _assign_anomalies_dijkstra(
+        labels, anomaly_diagnostics = _assign_anomalies_cost_gate(
             labels, state["edge_keys"], state["projected_edge_sizes"], len(X),
             penalty_power=component_growth_anomaly_reassign_penalty_power,
-            stop_ratio=component_growth_anomaly_reassign_stop_ratio,
+            reach=component_growth_anomaly_reassign_reach,
             core_distance=core_distance,
             density_power=component_growth_anomaly_reassign_density_power,
             density_clip=component_growth_anomaly_reassign_density_clip,

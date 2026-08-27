@@ -1,0 +1,36 @@
+{
+  "categories": [
+    "billing_and_payment",
+    "login_account_access",
+    "shipping_delivery",
+    "product_defect_bug_report",
+    "feature_request",
+    "refund_cancellation",
+    "technical_setup",
+    "subscription_plan_change"
+  ],
+  "n_per_cluster": 85,
+  "n_signal": 680,
+  "n_noise": 120,
+  "noise_rate_actual": 0.15,
+  "seed": 0,
+  "models": {
+    "BAAI/bge-m3": {
+      "dim": 1024,
+      "file": "text_support_tickets__bgem3.npz"
+    },
+    "google/embeddinggemma-300m": {
+      "dim": 768,
+      "file": "text_support_tickets__embeddinggemma300m.npz"
+    },
+    "Qwen/Qwen3-Embedding-0.6B": {
+      "dim": 1024,
+      "file": "text_support_tickets__qwen3emb06b.npz"
+    },
+    "Qwen/Qwen3-Embedding-4B": {
+      "dim": 2560,
+      "file": "text_support_tickets__qwen3emb4b.npz"
+    }
+  },
+  "note": "sentences are template-generated, not downloaded from any dataset"
+}

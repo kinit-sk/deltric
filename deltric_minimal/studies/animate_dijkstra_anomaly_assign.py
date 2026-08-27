@@ -35,6 +35,7 @@ from growth_dijkstra_anomaly_assign import BASE_CONFIG  # noqa: E402
 sys.path.insert(0, str(ROOT.parent.parent))
 from deltric_minimal.utils_component_growth import (  # noqa: E402
     _assign_anomalies_dijkstra,
+    _knn_core_distance,
     cluster_tri,
 )
 
@@ -62,6 +63,13 @@ def main() -> None:
     parser.add_argument("--out", default=Path("studies/results/growth_dijkstra_anomaly_assign/anomaly_assign.gif"), type=Path)
     parser.add_argument("--penalty-power", type=float, default=2.0)
     parser.add_argument("--stop-ratio", type=float, default=3.0)
+    parser.add_argument("--density-power", type=float, default=0.0,
+                        help="0 = old behaviour (no original-space density term); "
+                             "e.g. 2.0 = new density-correlated variant")
+    parser.add_argument("--density-clip", action="store_true",
+                        help="one-sided density correction (ratios below 1 clamped to 1)")
+    parser.add_argument("--density-k", type=int, default=15,
+                        help="k for the original-space kNN core distance")
     parser.add_argument("--fps", type=float, default=6.0)
     parser.add_argument("--hold-start", type=int, default=6, help="repeated frames on round 0")
     parser.add_argument("--hold-end", type=int, default=10, help="repeated frames on the final round")
@@ -78,16 +86,26 @@ def main() -> None:
     proj_sizes = np.asarray(state["projected_edge_sizes"], dtype=np.float64)
     X_proj = np.asarray(state["X_proj"], dtype=np.float64)
 
+    use_density = args.density_power != 0.0
+    core_distance = _knn_core_distance(X, args.density_k) if use_density else None
+    density_kwargs = dict(
+        core_distance=core_distance,
+        density_power=args.density_power,
+        density_clip=args.density_clip,
+    )
+
     # Dry pass: learn the round count so every round can get its own frame.
     _, dry_diag = _assign_anomalies_dijkstra(
         main_labels, edge_keys, proj_sizes, len(X),
         penalty_power=args.penalty_power, stop_ratio=args.stop_ratio,
+        **density_kwargs,
     )
     n_rounds = dry_diag["n_rounds"]
     assigned_labels, diag = _assign_anomalies_dijkstra(
         main_labels, edge_keys, proj_sizes, len(X),
         penalty_power=args.penalty_power, stop_ratio=args.stop_ratio,
         snapshot_rounds=set(range(0, n_rounds + 1)),
+        **density_kwargs,
     )
     ari = float(adjusted_rand_score(y, assigned_labels)) if y is not None else float("nan")
 
@@ -113,9 +131,13 @@ def main() -> None:
     ax.set_aspect("equal", adjustable="box")
     ax.set_xticks([])
     ax.set_yticks([])
+    variant_tag = (
+        f"density-correlated (q={args.density_power:g}{', clip' if args.density_clip else ''})"
+        if use_density else "old (no density term)"
+    )
     fig.suptitle(
-        f"{args.data.stem}  --  competitive-Dijkstra anomaly reassignment\n"
-        f"(power={args.penalty_power}, stop_ratio={args.stop_ratio})",
+        f"{args.data.stem}  --  competitive-Dijkstra anomaly reassignment  --  {variant_tag}\n"
+        f"(penalty_power={args.penalty_power}, stop_ratio={args.stop_ratio})",
         fontsize=10,
     )
     fig.tight_layout(rect=(0, 0, 1, 0.93))

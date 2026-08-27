@@ -91,7 +91,7 @@ def scores(y_true_anomaly: np.ndarray, pred_labels: np.ndarray) -> dict:
     }
 
 
-def run_one(path: Path, penalty_power: float, stop_ratio: float) -> dict:
+def run_one(path: Path, penalty_power: float, reach: float) -> dict:
     npz = np.load(path, allow_pickle=False)
     X = StandardScaler().fit_transform(np.asarray(npz["X"], dtype=np.float64))
     y = np.asarray(npz["y"]).astype(np.int64)
@@ -106,7 +106,7 @@ def run_one(path: Path, penalty_power: float, stop_ratio: float) -> dict:
         X, **BASE_CONFIG,
         component_growth_anomaly_reassign=True,
         component_growth_anomaly_reassign_penalty_power=penalty_power,
-        component_growth_anomaly_reassign_stop_ratio=stop_ratio,
+        component_growth_anomaly_reassign_reach=reach,
     )
     elapsed = time.perf_counter() - started
     state = cluster_tri.last_component_growth
@@ -167,8 +167,8 @@ def main() -> None:
                         help="glob pattern(s) under --data to score instead of the "
                              "built-in list, e.g. --glob '*__anom10.npz'")
     parser.add_argument("--out", default=Path("studies/results/anomaly_f1"), type=Path)
-    parser.add_argument("--penalty-power", type=float, default=2.0)
-    parser.add_argument("--stop-ratio", type=float, default=3.0)
+    parser.add_argument("--penalty-power", type=float, default=3.0)
+    parser.add_argument("--reach", type=float, default=25.0)
     args = parser.parse_args()
 
     if args.glob:
@@ -181,8 +181,8 @@ def main() -> None:
         if missing:
             raise SystemExit(f"missing datasets: {missing}")
 
-    print(f"{len(files)} noise-labeled datasets  penalty_power={args.penalty_power}  stop_ratio={args.stop_ratio}", flush=True)
-    rows = [run_one(path, args.penalty_power, args.stop_ratio) for path in files]
+    print(f"{len(files)} noise-labeled datasets  penalty_power={args.penalty_power}  reach={args.reach}", flush=True)
+    rows = [run_one(path, args.penalty_power, args.reach) for path in files]
 
     args.out.mkdir(parents=True, exist_ok=True)
     write_csv(rows, args.out / "anomaly_f1_dijkstra_vs_baseline.csv")

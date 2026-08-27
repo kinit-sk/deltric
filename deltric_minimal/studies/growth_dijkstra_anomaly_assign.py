@@ -87,7 +87,7 @@ BASE_CONFIG = dict(
 )
 
 
-def run_one(path: Path, penalty_power: float, stop_ratio: float) -> dict:
+def run_one(path: Path, penalty_power: float, reach: float) -> dict:
     npz = np.load(path, allow_pickle=False)
     X = StandardScaler().fit_transform(np.asarray(npz["X"], dtype=np.float64))
     y = np.asarray(npz["y"]).astype(np.int64)
@@ -98,7 +98,7 @@ def run_one(path: Path, penalty_power: float, stop_ratio: float) -> dict:
         X, **BASE_CONFIG,
         component_growth_anomaly_reassign=True,
         component_growth_anomaly_reassign_penalty_power=penalty_power,
-        component_growth_anomaly_reassign_stop_ratio=stop_ratio,
+        component_growth_anomaly_reassign_reach=reach,
     )
     elapsed = time.perf_counter() - started
     state = cluster_tri.last_component_growth
@@ -115,9 +115,9 @@ def run_one(path: Path, penalty_power: float, stop_ratio: float) -> dict:
         "n_main_clusters": int(len(np.unique(baseline_labels[baseline_labels >= 0]))),
         "n_anomalies_in": diag["n_anomalies_in"],
         "n_anomalies_out": diag["n_anomalies_out"],
-        "n_rounds": diag["n_rounds"],
+        "n_claims": diag["n_claims"],
         "penalty_power": penalty_power,
-        "stop_ratio": stop_ratio,
+        "reach": reach,
         "baseline_ari": baseline_ari,
         "assigned_ari": assigned_ari,
         "delta_vs_baseline": assigned_ari - baseline_ari,
@@ -127,7 +127,7 @@ def run_one(path: Path, penalty_power: float, stop_ratio: float) -> dict:
         f"  {path.stem:<38} baseline={baseline_ari:.4f}  "
         f"assigned={assigned_ari:.4f}  (delta={row['delta_vs_baseline']:+.4f}, "
         f"{diag['n_anomalies_in']}->{diag['n_anomalies_out']} anomalies, "
-        f"{diag['n_rounds']} rounds, {elapsed:.1f}s)",
+        f"{diag['n_claims']} claims, {elapsed:.1f}s)",
         flush=True,
     )
     return row
@@ -150,8 +150,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", default=_DEFAULT_DATA_DIR, type=Path)
     parser.add_argument("--out", default=Path("results/growth_dijkstra_anomaly_assign"), type=Path)
-    parser.add_argument("--penalty-power", type=float, default=2.0)
-    parser.add_argument("--stop-ratio", type=float, default=3.0)
+    parser.add_argument("--penalty-power", type=float, default=3.0)
+    parser.add_argument("--reach", type=float, default=25.0)
     parser.add_argument(
         "--datasets", default="",
         help="optional comma-separated filename stems; default is all .npz files",
@@ -165,8 +165,8 @@ def main() -> None:
     if not files:
         raise SystemExit(f"no .npz datasets under {args.data}")
 
-    print(f"{len(files)} datasets  penalty_power={args.penalty_power}  stop_ratio={args.stop_ratio}", flush=True)
-    rows = [run_one(path, args.penalty_power, args.stop_ratio) for path in files]
+    print(f"{len(files)} datasets  penalty_power={args.penalty_power}  reach={args.reach}", flush=True)
+    rows = [run_one(path, args.penalty_power, args.reach) for path in files]
 
     args.out.mkdir(parents=True, exist_ok=True)
     write_csv(rows, args.out / "growth_dijkstra_anomaly_assign.csv")
