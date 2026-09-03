@@ -12,6 +12,7 @@ enabled) projected-space hard limits.
 
 from __future__ import annotations
 
+import heapq
 from typing import Any
 
 import numpy as np
@@ -1207,6 +1208,124 @@ def _merge_component_outliers(
     return merged, diagnostics
 
 
+def _knn_core_distance(X: np.ndarray, k: int) -> np.ndarray:
+    """Mean original-space distance to the ``k`` nearest neighbours."""
+    X = np.asarray(X, dtype=np.float64)
+    n_points = len(X)
+    if n_points < 2:
+        return np.zeros(n_points, dtype=np.float64)
+    k = int(max(1, min(k, n_points - 1)))
+    distances, _ = NearestNeighbors(n_neighbors=k + 1).fit(X).kneighbors(X)
+    return distances[:, 1:].mean(axis=1)
+
+
+def _assign_anomalies_cost_gate(
+    labels: np.ndarray,
+    edge_keys: np.ndarray,
+    projected_edge_sizes: np.ndarray,
+    n_points: int,
+    penalty_power: float,
+    reach: float,
+    core_distance: np.ndarray | None = None,
+    density_power: float = 0.0,
+    density_clip: bool = False,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    """Reclaim noise with a density-weighted, cost-budgeted Dijkstra search.
+
+    The completed components are fixed sources.  This phase only changes
+    points labeled ``-1``; it never relabels an assigned point and therefore
+    cannot merge two components.
+    """
+    labels = np.asarray(labels, dtype=np.int64)
+    edge_keys = np.asarray(edge_keys, dtype=np.int64)
+    projected_edge_sizes = np.asarray(projected_edge_sizes, dtype=np.float64)
+    n_edges = len(edge_keys)
+    n_clusters = int(labels.max()) + 1 if np.any(labels >= 0) else 0
+    use_density = density_power != 0.0 and core_distance is not None
+    diagnostics: dict[str, Any] = {
+        "mode": "cost-gate density Dijkstra",
+        "penalty_power": float(penalty_power),
+        "reach": float(reach),
+        "density_power": float(density_power) if use_density else 0.0,
+        "density_clip": bool(density_clip) if use_density else False,
+        "n_anomalies_in": int(np.count_nonzero(labels < 0)),
+        "n_anomalies_out": 0,
+        "n_claims": 0,
+        "grown_mask": np.zeros(n_edges, dtype=bool),
+    }
+    if n_clusters == 0 or diagnostics["n_anomalies_in"] == 0:
+        diagnostics["n_anomalies_out"] = diagnostics["n_anomalies_in"]
+        return labels.copy(), diagnostics
+
+    adjacency: list[list[tuple[int, int]]] = [[] for _ in range(n_points)]
+    for edge_index, (u, v) in enumerate(edge_keys):
+        adjacency[int(u)].append((int(v), edge_index))
+        adjacency[int(v)].append((int(u), edge_index))
+
+    sums = np.zeros(n_clusters, dtype=np.float64)
+    counts = np.zeros(n_clusters, dtype=np.int64)
+    for edge_index, (u, v) in enumerate(edge_keys):
+        cluster_u, cluster_v = int(labels[u]), int(labels[v])
+        if cluster_u >= 0 and cluster_u == cluster_v:
+            sums[cluster_u] += projected_edge_sizes[edge_index]
+            counts[cluster_u] += 1
+    global_median = float(np.median(projected_edge_sizes)) if n_edges else 1.0
+    average = np.maximum(
+        np.where(counts > 0, sums / np.maximum(counts, 1), global_median), 1e-12,
+    )
+
+    if use_density:
+        core_distance = np.asarray(core_distance, dtype=np.float64)
+        global_core = float(np.median(core_distance)) if len(core_distance) else 1.0
+        density_reference = np.full(n_clusters, global_core, dtype=np.float64)
+        for cluster in range(n_clusters):
+            values = core_distance[labels == cluster]
+            if len(values):
+                density_reference[cluster] = float(np.median(values))
+        density_reference = np.maximum(density_reference, 1e-12)
+
+        def relative(edge_index: int, node: int, cluster: int) -> float:
+            ratio = core_distance[node] / density_reference[cluster]
+            if density_clip and ratio < 1.0:
+                ratio = 1.0
+            return (projected_edge_sizes[edge_index] * ratio) / average[cluster]
+    else:
+        def relative(edge_index: int, node: int, cluster: int) -> float:
+            return projected_edge_sizes[edge_index] / average[cluster]
+
+    owner = labels.copy()
+    exponent = 1.0 + float(penalty_power)
+    heap: list[tuple[float, int, int, int]] = []
+    for cluster in range(n_clusters):
+        for node in np.flatnonzero(labels == cluster):
+            for neighbour, edge_index in adjacency[int(node)]:
+                if labels[neighbour] != cluster:
+                    cost = relative(edge_index, neighbour, cluster) ** exponent
+                    if cost <= reach:
+                        heapq.heappush(heap, (cost, neighbour, cluster, edge_index))
+
+    while heap:
+        distance, node, cluster, edge_index = heapq.heappop(heap)
+        if owner[node] != -1:
+            continue
+        owner[node] = cluster
+        diagnostics["grown_mask"][edge_index] = True
+        diagnostics["n_claims"] += 1
+        for neighbour, next_edge_index in adjacency[node]:
+            if owner[neighbour] != -1:
+                continue
+            candidate = distance + relative(
+                next_edge_index, neighbour, cluster,
+            ) ** exponent
+            if candidate <= reach:
+                heapq.heappush(
+                    heap, (candidate, neighbour, cluster, next_edge_index),
+                )
+
+    diagnostics["n_anomalies_out"] = int(np.count_nonzero(owner < 0))
+    return owner, diagnostics
+
+
 def cluster_tri(
     X, prune_param=1.0, merge_param=None, min_cluster_size=10,
     dim_reduction="umap", back_proj=True, anomaly_sensitivity=0.0,
@@ -1233,6 +1352,12 @@ def cluster_tri(
     component_growth_outer_long_ratio=3.0,
     component_growth_outer_relaxation=0.25,
     component_growth_outer_transition_width=0.4054651081,
+    component_growth_anomaly_reassign=False,
+    component_growth_anomaly_reassign_penalty_power=3.0,
+    component_growth_anomaly_reassign_reach=25.0,
+    component_growth_anomaly_reassign_density_power=4.0,
+    component_growth_anomaly_reassign_density_k=15,
+    component_growth_anomaly_reassign_density_clip=False,
     **kwargs,
 ):
     """Cluster using the component-growth graph.
@@ -1286,6 +1411,23 @@ def cluster_tri(
         None if component_growth_outlier_limit is None
         else float(component_growth_outlier_limit)
     )
+    if component_growth_anomaly_reassign:
+        core_distance = None
+        if component_growth_anomaly_reassign_density_power != 0.0:
+            core_distance = _knn_core_distance(
+                np.asarray(X), component_growth_anomaly_reassign_density_k,
+            )
+            state["core_distance"] = core_distance
+        labels, anomaly_diagnostics = _assign_anomalies_cost_gate(
+            labels, state["edge_keys"], state["projected_edge_sizes"], len(X),
+            penalty_power=component_growth_anomaly_reassign_penalty_power,
+            reach=component_growth_anomaly_reassign_reach,
+            core_distance=core_distance,
+            density_power=component_growth_anomaly_reassign_density_power,
+            density_clip=component_growth_anomaly_reassign_density_clip,
+        )
+        state["anomaly_reassign"] = anomaly_diagnostics
+        state["anomaly_reassigned_labels"] = labels
     cluster_tri.last_component_growth = state
     cluster_tri.regime_used = "component_growth"
     cluster_tri.fallback_triggered = False
