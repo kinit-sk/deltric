@@ -1222,7 +1222,7 @@ def _knn_core_distance(X: np.ndarray, k: int) -> np.ndarray:
 def _assign_anomalies_cost_gate(
     labels: np.ndarray,
     edge_keys: np.ndarray,
-    projected_edge_sizes: np.ndarray,
+    orig_edge_sizes: np.ndarray,
     n_points: int,
     penalty_power: float,
     reach: float,
@@ -1230,7 +1230,7 @@ def _assign_anomalies_cost_gate(
     density_power: float = 0.0,
     density_clip: bool = False,
 ) -> tuple[np.ndarray, dict[str, Any]]:
-    """Reclaim noise with a density-weighted, cost-budgeted Dijkstra search.
+    """Reclaim noise with original-space, density-weighted Dijkstra search.
 
     The completed components are fixed sources.  This phase only changes
     points labeled ``-1``; it never relabels an assigned point and therefore
@@ -1238,7 +1238,9 @@ def _assign_anomalies_cost_gate(
     """
     labels = np.asarray(labels, dtype=np.int64)
     edge_keys = np.asarray(edge_keys, dtype=np.int64)
-    projected_edge_sizes = np.asarray(projected_edge_sizes, dtype=np.float64)
+    # The Delaunay graph supplies topology, but every cost is measured after
+    # back-projection in the standardized original feature space.
+    orig_edge_sizes = np.asarray(orig_edge_sizes, dtype=np.float64)
     n_edges = len(edge_keys)
     n_clusters = int(labels.max()) + 1 if np.any(labels >= 0) else 0
     use_density = density_power != 0.0 and core_distance is not None
@@ -1267,9 +1269,9 @@ def _assign_anomalies_cost_gate(
     for edge_index, (u, v) in enumerate(edge_keys):
         cluster_u, cluster_v = int(labels[u]), int(labels[v])
         if cluster_u >= 0 and cluster_u == cluster_v:
-            sums[cluster_u] += projected_edge_sizes[edge_index]
+            sums[cluster_u] += orig_edge_sizes[edge_index]
             counts[cluster_u] += 1
-    global_median = float(np.median(projected_edge_sizes)) if n_edges else 1.0
+    global_median = float(np.median(orig_edge_sizes)) if n_edges else 1.0
     average = np.maximum(
         np.where(counts > 0, sums / np.maximum(counts, 1), global_median), 1e-12,
     )
@@ -1288,10 +1290,10 @@ def _assign_anomalies_cost_gate(
             ratio = core_distance[node] / density_reference[cluster]
             if density_clip and ratio < 1.0:
                 ratio = 1.0
-            return (projected_edge_sizes[edge_index] * ratio) / average[cluster]
+            return (orig_edge_sizes[edge_index] * ratio) / average[cluster]
     else:
         def relative(edge_index: int, node: int, cluster: int) -> float:
-            return projected_edge_sizes[edge_index] / average[cluster]
+            return orig_edge_sizes[edge_index] / average[cluster]
 
     owner = labels.copy()
     exponent = 1.0 + float(penalty_power)
@@ -1419,7 +1421,7 @@ def cluster_tri(
             )
             state["core_distance"] = core_distance
         labels, anomaly_diagnostics = _assign_anomalies_cost_gate(
-            labels, state["edge_keys"], state["projected_edge_sizes"], len(X),
+            labels, state["edge_keys"], state["orig_edge_sizes"], len(X),
             penalty_power=component_growth_anomaly_reassign_penalty_power,
             reach=component_growth_anomaly_reassign_reach,
             core_distance=core_distance,
