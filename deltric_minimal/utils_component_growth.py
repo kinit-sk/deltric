@@ -1243,22 +1243,13 @@ def _merge_component_outliers(
 
 
 def _knn_core_distance(X: np.ndarray, k: int) -> np.ndarray:
-    """Mean distance to each point's ``k`` nearest neighbours in *original* space.
-
-    An inverse-density proxy: small value = the point sits in a dense
-    neighbourhood, large value = it sits in a void. Used instead of a
-    radius/kernel density estimate because a fixed-radius ball is empty for
-    every point once the data is 50- or 100-dimensional, whereas the k-th
-    nearest-neighbour distance stays well defined at any dimension (it is the
-    same quantity HDBSCAN calls a core distance).
-
-    The self-match is dropped, so ``k`` genuine neighbours are averaged.
-    """
+    """Mean original-space distance to the ``k`` nearest neighbours."""
     X = np.asarray(X, dtype=np.float64)
-    n = len(X)
-    k = int(max(1, min(k, n - 1)))
-    nearest = NearestNeighbors(n_neighbors=k + 1).fit(X)
-    distances, _ = nearest.kneighbors(X)
+    n_points = len(X)
+    if n_points < 2:
+        return np.zeros(n_points, dtype=np.float64)
+    k = int(max(1, min(k, n_points - 1)))
+    distances, _ = NearestNeighbors(n_neighbors=k + 1).fit(X).kneighbors(X)
     return distances[:, 1:].mean(axis=1)
 
 
@@ -1497,7 +1488,7 @@ def _assign_anomalies_dijkstra(
 def _assign_anomalies_cost_gate(
     labels: np.ndarray,
     edge_keys: np.ndarray,
-    proj_edge_sizes: np.ndarray,
+    orig_edge_sizes: np.ndarray,
     n_points: int,
     penalty_power: float,
     reach: float,
@@ -1505,49 +1496,22 @@ def _assign_anomalies_cost_gate(
     density_power: float = 0.0,
     density_clip: bool = False,
 ) -> tuple[np.ndarray, dict[str, Any]]:
-    """Reclaim label ``-1`` points via a whole-path cost-budgeted Dijkstra.
+    """Reclaim noise with original-space, density-weighted Dijkstra search.
 
-    Ported from ``studies/anomaly_cost_gate_study.cost_gate`` (see that
-    module and ``studies/density_fixed_formula_viz.py`` for the full
-    derivation and the study results that motivated it). Supersedes
-    ``_assign_anomalies_dijkstra`` as the production reclamation stage: that
-    older gate accumulates a penalized cost into ``dist`` but only ever
-    tests a *single edge* against ``stop_ratio`` on raw length, so
-    ``penalty_power`` was inert (a monotone transform of length does not
-    change pop order) and one wrongly claimed point became a launchpad for
-    the next. Here every hop's price is measured in "typical edge for this
-    cluster" units and the *whole accumulated path* is budgeted against
-    ``reach``, with a single global heap (true multi-source Dijkstra)
-    instead of one claim per cluster per round::
-
-        r    = (length * rho(v, c) ** density_power) / avg_c   # 1.0 == a typical edge for c
-        cost = r ** (1 + penalty_power)                        # this hop's price, in hops
-        claim v iff sum(cost along path) <= reach
-
-    ``rho(v, c) = core_distance[v] / median(core_distance over members of
-    c)``, where ``core_distance`` is mean distance to the ``k`` nearest
-    neighbours in *original* space (see ``_knn_core_distance``). UMAP
-    preserves topology, not metric, and will happily place a genuinely
-    isolated point next to the manifold it is nearest to, giving a true
-    anomaly a short projected edge; ``rho > 1`` means "v sits in a void
-    relative to the inside of c", which is exactly the signal projected
-    length alone cannot see. ``density_clip`` makes the correction one-sided
-    (ratios below 1 clamp to 1), so unusually dense candidates are never made
-    cheaper to claim. ``density_power=0`` (or no ``core_distance``) drops the
-    density term entirely.
-
-    Study defaults across the numbered ground-truth-anomaly datasets:
-    ``penalty_power=3.0``, ``reach=25.0``, ``density_power=4.0`` -- this
-    variant (``fix_p3_r25_q4``) had the best F1/ARI tradeoff of every gate
-    tried, beating both the shipped edge gate and the density-free cost gate.
+    The completed components are fixed sources.  This phase only changes
+    points labeled ``-1``; it never relabels an assigned point and therefore
+    cannot merge two components.
     """
     labels = np.asarray(labels, dtype=np.int64)
     edge_keys = np.asarray(edge_keys, dtype=np.int64)
-    proj_edge_sizes = np.asarray(proj_edge_sizes, dtype=np.float64)
+    # The Delaunay graph supplies topology, but every cost is measured after
+    # back-projection in the standardized original feature space.
+    orig_edge_sizes = np.asarray(orig_edge_sizes, dtype=np.float64)
     n_edges = len(edge_keys)
     n_clusters = int(labels.max()) + 1 if np.any(labels >= 0) else 0
     use_density = density_power != 0.0 and core_distance is not None
     diagnostics: dict[str, Any] = {
+        "mode": "cost-gate density Dijkstra",
         "penalty_power": float(penalty_power),
         "reach": float(reach),
         "density_power": float(density_power) if use_density else 0.0,
@@ -1562,75 +1526,69 @@ def _assign_anomalies_cost_gate(
         return labels.copy(), diagnostics
 
     adjacency: list[list[tuple[int, int]]] = [[] for _ in range(n_points)]
-    for edge_index in range(n_edges):
-        u, v = int(edge_keys[edge_index, 0]), int(edge_keys[edge_index, 1])
-        adjacency[u].append((v, edge_index))
-        adjacency[v].append((u, edge_index))
+    for edge_index, (u, v) in enumerate(edge_keys):
+        adjacency[int(u)].append((int(v), edge_index))
+        adjacency[int(v)].append((int(u), edge_index))
 
-    # avg[c] is frozen once, from c's own edges: the "typical hop" unit r is
-    # measured against.
-    sum_len = np.zeros(max(n_clusters, 1), dtype=np.float64)
-    count_len = np.zeros(max(n_clusters, 1), dtype=np.int64)
-    for edge_index in range(n_edges):
-        u, v = edge_keys[edge_index]
-        cu, cv = int(labels[u]), int(labels[v])
-        if cu >= 0 and cu == cv:
-            sum_len[cu] += proj_edge_sizes[edge_index]
-            count_len[cu] += 1
-    global_median = float(np.median(proj_edge_sizes)) if n_edges else 1.0
-    avg = np.maximum(
-        np.where(count_len > 0, sum_len / np.maximum(count_len, 1), global_median),
-        1e-12,
+    sums = np.zeros(n_clusters, dtype=np.float64)
+    counts = np.zeros(n_clusters, dtype=np.int64)
+    for edge_index, (u, v) in enumerate(edge_keys):
+        cluster_u, cluster_v = int(labels[u]), int(labels[v])
+        if cluster_u >= 0 and cluster_u == cluster_v:
+            sums[cluster_u] += orig_edge_sizes[edge_index]
+            counts[cluster_u] += 1
+    global_median = float(np.median(orig_edge_sizes)) if n_edges else 1.0
+    average = np.maximum(
+        np.where(counts > 0, sums / np.maximum(counts, 1), global_median), 1e-12,
     )
 
-    # Original-space density reference, frozen per cluster: dens_ref[c] is the
-    # median core distance over c's own members, so rho(v, c) is scale-free.
     if use_density:
         core_distance = np.asarray(core_distance, dtype=np.float64)
         global_core = float(np.median(core_distance)) if len(core_distance) else 1.0
-        dens_ref = np.full(max(n_clusters, 1), global_core, dtype=np.float64)
+        density_reference = np.full(n_clusters, global_core, dtype=np.float64)
         for cluster in range(n_clusters):
-            members = core_distance[labels == cluster]
-            if len(members):
-                dens_ref[cluster] = float(np.median(members))
-        dens_ref = np.maximum(dens_ref, 1e-12)
+            values = core_distance[labels == cluster]
+            if len(values):
+                density_reference[cluster] = float(np.median(values))
+        density_reference = np.maximum(density_reference, 1e-12)
 
         def relative(edge_index: int, node: int, cluster: int) -> float:
-            ratio = core_distance[node] / dens_ref[cluster]
+            ratio = core_distance[node] / density_reference[cluster]
             if density_clip and ratio < 1.0:
                 ratio = 1.0
-            return (proj_edge_sizes[edge_index] * ratio) / avg[cluster]
+            return (orig_edge_sizes[edge_index] * ratio) / average[cluster]
     else:
         def relative(edge_index: int, node: int, cluster: int) -> float:
-            return proj_edge_sizes[edge_index] / avg[cluster]
+            return orig_edge_sizes[edge_index] / average[cluster]
 
     owner = labels.copy()
-    grown_mask = diagnostics["grown_mask"]
-    exponent = 1.0 + penalty_power
-
+    exponent = 1.0 + float(penalty_power)
     heap: list[tuple[float, int, int, int]] = []
     for cluster in range(n_clusters):
         for node in np.flatnonzero(labels == cluster):
-            for neighbor, edge_index in adjacency[int(node)]:
-                if labels[neighbor] == cluster:
-                    continue
-                cost = relative(edge_index, int(neighbor), cluster) ** exponent
-                if cost <= reach:
-                    heapq.heappush(heap, (cost, int(neighbor), cluster, edge_index))
+            for neighbour, edge_index in adjacency[int(node)]:
+                if labels[neighbour] != cluster:
+                    cost = relative(edge_index, neighbour, cluster) ** exponent
+                    if cost <= reach:
+                        heapq.heappush(heap, (cost, neighbour, cluster, edge_index))
 
     while heap:
-        dist, node, cluster, edge_index = heapq.heappop(heap)
+        distance, node, cluster, edge_index = heapq.heappop(heap)
         if owner[node] != -1:
             continue
         owner[node] = cluster
-        grown_mask[edge_index] = True
+        diagnostics["grown_mask"][edge_index] = True
         diagnostics["n_claims"] += 1
-        for neighbor, next_edge_index in adjacency[node]:
-            if owner[neighbor] != -1:
+        for neighbour, next_edge_index in adjacency[node]:
+            if owner[neighbour] != -1:
                 continue
-            nxt = dist + relative(next_edge_index, int(neighbor), cluster) ** exponent
-            if nxt <= reach:
-                heapq.heappush(heap, (nxt, int(neighbor), cluster, next_edge_index))
+            candidate = distance + relative(
+                next_edge_index, neighbour, cluster,
+            ) ** exponent
+            if candidate <= reach:
+                heapq.heappush(
+                    heap, (candidate, neighbour, cluster, next_edge_index),
+                )
 
     diagnostics["n_anomalies_out"] = int(np.count_nonzero(owner < 0))
     return owner, diagnostics
@@ -1736,7 +1694,7 @@ def cluster_tri(
             )
             state["core_distance"] = core_distance
         labels, anomaly_diagnostics = _assign_anomalies_cost_gate(
-            labels, state["edge_keys"], state["projected_edge_sizes"], len(X),
+            labels, state["edge_keys"], state["orig_edge_sizes"], len(X),
             penalty_power=component_growth_anomaly_reassign_penalty_power,
             reach=component_growth_anomaly_reassign_reach,
             core_distance=core_distance,

@@ -21,7 +21,7 @@ from scipy.sparse.csgraph import connected_components
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from utils_component_growth import component_growth_graph  # noqa: E402

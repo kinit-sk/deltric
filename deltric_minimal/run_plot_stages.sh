@@ -22,8 +22,8 @@ UMAP_N_NEIGHBORS="${UMAP_N_NEIGHBORS:-15}"
 HARD_SEED_LIMIT="${HARD_SEED_LIMIT:-0.0}"
 SEED_HARD_LIMIT="${SEED_HARD_LIMIT:-$HARD_SEED_LIMIT}"
 # Joint ARI sweep with all eligible Gomory--Hu cuts (size <= 6) enabled.
-HARD_GROWTH_LIMIT="${HARD_GROWTH_LIMIT:-1.5}"
-PROJECTED_HARD_GROWTH_LIMIT="${PROJECTED_HARD_GROWTH_LIMIT:-1.0}"
+HARD_GROWTH_LIMIT="${HARD_GROWTH_LIMIT:-1.05}"
+PROJECTED_HARD_GROWTH_LIMIT="${PROJECTED_HARD_GROWTH_LIMIT:-1.35}"
 GROWTH_INITIAL_RELATION="${GROWTH_INITIAL_RELATION:-union}"
 GROWTH_KNN="${GROWTH_KNN:-50}"
 GROWTH_MIN_EDGES="${GROWTH_MIN_EDGES:-10}"
@@ -36,6 +36,17 @@ GOMORY_HU_MIN_COMPONENT_POINTS="${GOMORY_HU_MIN_COMPONENT_POINTS:-10}"
 # weighted outer-hull/non-hull ratio reaches this value.  0 disables the gate.
 GOMORY_HU_HULL_RATIO_SKIP_THRESHOLD="${GOMORY_HU_HULL_RATIO_SKIP_THRESHOLD:-0.0}"
 GOMORY_HU_GROWTH_EDGES_ONLY="${GOMORY_HU_GROWTH_EDGES_ONLY:-true}"
+# Final, fixed-component outlier reassignment.  Costs and density statistics
+# are measured in standardized original space; UMAP supplies only topology.
+OUTLIER_GROWTH="${OUTLIER_GROWTH:-true}"
+OUTLIER_REASSIGNMENT="${OUTLIER_REASSIGNMENT:-cost_gate}"
+OUTLIER_COST_GATE_PENALTY_POWER="${OUTLIER_COST_GATE_PENALTY_POWER:-0.5}"
+OUTLIER_COST_GATE_REACH="${OUTLIER_COST_GATE_REACH:-10.0}"
+OUTLIER_COST_GATE_DENSITY_POWER="${OUTLIER_COST_GATE_DENSITY_POWER:-0.5}"
+OUTLIER_COST_GATE_DENSITY_K="${OUTLIER_COST_GATE_DENSITY_K:-15}"
+OUTLIER_COST_GATE_DENSITY_CLIP="${OUTLIER_COST_GATE_DENSITY_CLIP:-false}"
+OUTLIER_GROWTH_HARD_LIMIT="${OUTLIER_GROWTH_HARD_LIMIT:-3.0}"
+PROJECTED_OUTLIER_GROWTH_HARD_LIMIT="${PROJECTED_OUTLIER_GROWTH_HARD_LIMIT:-3.0}"
 SKIP_EXISTING="${SKIP_EXISTING:-false}"
 mkdir -p "$OUT"
 
@@ -61,6 +72,18 @@ if [[ "$GOMORY_HU_GROWTH_EDGES_ONLY" == "true" ]]; then
   GOMORY_GRAPH_ARGS+=(--gomory-hu-growth-edges-only)
 else
   GOMORY_GRAPH_ARGS+=(--no-gomory-hu-growth-edges-only)
+fi
+OUTLIER_GROWTH_ARGS=()
+if [[ "$OUTLIER_GROWTH" == "true" ]]; then
+  OUTLIER_GROWTH_ARGS+=(--outlier-growth)
+else
+  OUTLIER_GROWTH_ARGS+=(--no-outlier-growth)
+fi
+OUTLIER_COST_GATE_ARGS=()
+if [[ "$OUTLIER_COST_GATE_DENSITY_CLIP" == "true" ]]; then
+  OUTLIER_COST_GATE_ARGS+=(--outlier-cost-gate-density-clip)
+else
+  OUTLIER_COST_GATE_ARGS+=(--no-outlier-cost-gate-density-clip)
 fi
 
 files=(data/*.npz)
@@ -89,6 +112,15 @@ for file in "${files[@]}"; do
     --gomory-hu-cut-size "$GOMORY_HU_CUT_SIZE" \
     --gomory-hu-min-component-points "$GOMORY_HU_MIN_COMPONENT_POINTS" \
     --gomory-hu-hull-ratio-skip-threshold "$GOMORY_HU_HULL_RATIO_SKIP_THRESHOLD" \
+    --outlier-reassignment "$OUTLIER_REASSIGNMENT" \
+    --outlier-cost-gate-penalty-power "$OUTLIER_COST_GATE_PENALTY_POWER" \
+    --outlier-cost-gate-reach "$OUTLIER_COST_GATE_REACH" \
+    --outlier-cost-gate-density-power "$OUTLIER_COST_GATE_DENSITY_POWER" \
+    --outlier-cost-gate-density-k "$OUTLIER_COST_GATE_DENSITY_K" \
+    --outlier-growth-hard-limit "$OUTLIER_GROWTH_HARD_LIMIT" \
+    --projected-outlier-growth-hard-limit "$PROJECTED_OUTLIER_GROWTH_HARD_LIMIT" \
     "${GOMORY_GRAPH_ARGS[@]}" \
+    "${OUTLIER_GROWTH_ARGS[@]}" \
+    "${OUTLIER_COST_GATE_ARGS[@]}" \
     --quiet "${RESTORE_ARGS[@]}" "${PROJECTED_ARGS[@]}"
 done
