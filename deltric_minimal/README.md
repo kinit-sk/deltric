@@ -24,26 +24,28 @@ cd deltric_minimal
 The default setup is:
 
 ```text
-seed hard limit              0.0
-component growth limit       1.5
-projected growth guard       1.0
+multi-D seed hard limit      0.8
+native-2D seed hard limit    0.1
+seed baseline                first significant edge-length mode, median fallback
+multi-D growth guards        original 1.5, projected 1.7
+native-2D growth guards      original/projected 1.5
 initial relation             union original-space 50-NN
 minimum seed size            10 edges
-restore intra-component edges true
-Gomory--Hu cut size          6
+restoration                  real internal edges up to limit 2.0
+Gomory pruning               point cuts; 7 edges (multi-D), 8 (native 2-D)
+Gomory shape gate            original-space score >= 12
 minimum GH side size         10 points
 ```
 
-The final stage restores original Delaunay edges whose endpoints belong to
-the same completed growth component, then removes eligible Gomory--Hu cuts.
-Set `GOMORY_HU_HULL_RATIO_SKIP_THRESHOLD` above zero to protect non-compact
-components: GH pruning is skipped when their weighted outer-hull/non-hull
-ratio reaches that value.  The default `0.0` disables this protection gate.
+The final stage restores qualifying original Delaunay edges within completed
+components, then removes eligible point-based Gomory cuts.  The shape gate is
+computed from the original-space triangle area and boundary length, so long,
+thin components are protected from that final pruning phase.
 
 All exposed controls are environment variables.  For example:
 
 ```bash
-GOMORY_HU_HULL_RATIO_SKIP_THRESHOLD=0.075 ./run_plot_stages.sh
+HARD_GROWTH_LIMIT_MULTID=1.6 ./run_plot_stages.sh
 ```
 
 The bundled data intentionally excludes the 1000-dimensional dataset; the
