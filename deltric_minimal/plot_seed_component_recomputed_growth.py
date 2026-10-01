@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 from collections import deque
-import heapq
 from itertools import combinations
 import json
 import sys
@@ -41,7 +40,11 @@ from sklearn.preprocessing import StandardScaler
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from utils_component_growth import component_growth_graph  # noqa: E402
+from utils_component_growth import (  # noqa: E402
+    _assign_anomalies_cost_gate,
+    _knn_core_distance,
+    component_growth_graph,
+)
 from hdbscan_comparison import fit_hdbscan, result_metrics  # noqa: E402
 from plot_seed_component_metrics import (  # noqa: E402
     _draw_base,
@@ -1884,128 +1887,6 @@ def _grow_frozen_components(
             "mode": "round-based frozen-component growth",
         },
     }
-
-
-def _knn_core_distance(X: np.ndarray, k: int) -> np.ndarray:
-    """Mean original-space distance to the ``k`` nearest neighbours."""
-    X = np.asarray(X, dtype=np.float64)
-    n_points = len(X)
-    if n_points < 2:
-        return np.zeros(n_points, dtype=np.float64)
-    k = int(max(1, min(k, n_points - 1)))
-    distances, _ = NearestNeighbors(n_neighbors=k + 1).fit(X).kneighbors(X)
-    return distances[:, 1:].mean(axis=1)
-
-
-def _assign_anomalies_cost_gate(
-    labels: np.ndarray,
-    edge_keys: np.ndarray,
-    orig_edge_sizes: np.ndarray,
-    n_points: int,
-    penalty_power: float,
-    reach: float,
-    core_distance: np.ndarray | None = None,
-    density_power: float = 0.0,
-    density_clip: bool = False,
-) -> tuple[np.ndarray, dict[str, object]]:
-    """Reclaim noise with original-space cost-gate density Dijkstra.
-
-    Completed components are fixed sources. Only points currently labeled
-    ``-1`` can be claimed, so no component merge is possible in this phase.
-    Topology comes from the projected Delaunay graph, while every edge cost
-    and density scale is computed in standardized original space.
-    """
-    labels = np.asarray(labels, dtype=np.int64)
-    edge_keys = np.asarray(edge_keys, dtype=np.int64)
-    orig_edge_sizes = np.asarray(orig_edge_sizes, dtype=np.float64)
-    n_edges = len(edge_keys)
-    n_clusters = int(labels.max()) + 1 if np.any(labels >= 0) else 0
-    use_density = density_power != 0.0 and core_distance is not None
-    diagnostics: dict[str, object] = {
-        "mode": "original-space cost-gate density Dijkstra",
-        "penalty_power": float(penalty_power),
-        "reach": float(reach),
-        "density_power": float(density_power) if use_density else 0.0,
-        "density_clip": bool(density_clip) if use_density else False,
-        "n_anomalies_in": int(np.count_nonzero(labels < 0)),
-        "n_anomalies_out": 0,
-        "n_claims": 0,
-        "grown_mask": np.zeros(n_edges, dtype=bool),
-    }
-    if n_clusters == 0 or diagnostics["n_anomalies_in"] == 0:
-        diagnostics["n_anomalies_out"] = diagnostics["n_anomalies_in"]
-        return labels.copy(), diagnostics
-
-    adjacency: list[list[tuple[int, int]]] = [[] for _ in range(n_points)]
-    for edge_index, (u, v) in enumerate(edge_keys):
-        adjacency[int(u)].append((int(v), edge_index))
-        adjacency[int(v)].append((int(u), edge_index))
-
-    sums = np.zeros(n_clusters, dtype=np.float64)
-    counts = np.zeros(n_clusters, dtype=np.int64)
-    for edge_index, (u, v) in enumerate(edge_keys):
-        cluster_u, cluster_v = int(labels[u]), int(labels[v])
-        if cluster_u >= 0 and cluster_u == cluster_v:
-            sums[cluster_u] += orig_edge_sizes[edge_index]
-            counts[cluster_u] += 1
-    global_median = float(np.median(orig_edge_sizes)) if n_edges else 1.0
-    average = np.maximum(
-        np.where(counts > 0, sums / np.maximum(counts, 1), global_median), 1e-12,
-    )
-
-    if use_density:
-        core_distance = np.asarray(core_distance, dtype=np.float64)
-        global_core = float(np.median(core_distance)) if len(core_distance) else 1.0
-        density_reference = np.full(n_clusters, global_core, dtype=np.float64)
-        for cluster in range(n_clusters):
-            values = core_distance[labels == cluster]
-            if len(values):
-                density_reference[cluster] = float(np.median(values))
-        density_reference = np.maximum(density_reference, 1e-12)
-
-        def relative(edge_index: int, node: int, cluster: int) -> float:
-            ratio = core_distance[node] / density_reference[cluster]
-            if density_clip and ratio < 1.0:
-                ratio = 1.0
-            density_factor = ratio ** float(density_power)
-            return (orig_edge_sizes[edge_index] * density_factor) / average[cluster]
-    else:
-        def relative(edge_index: int, node: int, cluster: int) -> float:
-            return orig_edge_sizes[edge_index] / average[cluster]
-
-    owner = labels.copy()
-    exponent = 1.0 + float(penalty_power)
-    heap: list[tuple[float, int, int, int]] = []
-    for cluster in range(n_clusters):
-        for node in np.flatnonzero(labels == cluster):
-            for neighbour, edge_index in adjacency[int(node)]:
-                if labels[neighbour] != cluster:
-                    cost = relative(edge_index, neighbour, cluster) ** exponent
-                    if cost <= reach:
-                        heapq.heappush(heap, (cost, neighbour, cluster, edge_index))
-
-    while heap:
-        distance, node, cluster, edge_index = heapq.heappop(heap)
-        if owner[node] != -1:
-            continue
-        owner[node] = cluster
-        grown_mask = diagnostics["grown_mask"]
-        assert isinstance(grown_mask, np.ndarray)
-        grown_mask[edge_index] = True
-        diagnostics["n_claims"] = int(diagnostics["n_claims"]) + 1
-        for neighbour, next_edge_index in adjacency[node]:
-            if owner[neighbour] != -1:
-                continue
-            candidate = distance + relative(
-                next_edge_index, neighbour, cluster,
-            ) ** exponent
-            if candidate <= reach:
-                heapq.heappush(
-                    heap, (candidate, neighbour, cluster, next_edge_index),
-                )
-
-    diagnostics["n_anomalies_out"] = int(np.count_nonzero(owner < 0))
-    return owner, diagnostics
 
 
 def _sequential_growth(edge_keys: np.ndarray, lengths: np.ndarray,

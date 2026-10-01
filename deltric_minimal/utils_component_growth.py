@@ -1500,7 +1500,10 @@ def _assign_anomalies_cost_gate(
 
     The completed components are fixed sources.  This phase only changes
     points labeled ``-1``; it never relabels an assigned point and therefore
-    cannot merge two components.
+    cannot merge two components.  Each hop costs ``r ** (1 + penalty_power)``
+    with ``r = length * rho ** density_power / avg_c`` and
+    ``rho = core_distance[v] / median core distance of c``.  Shared by
+    ``cluster_tri`` and ``plot_seed_component_recomputed_growth.py``.
     """
     labels = np.asarray(labels, dtype=np.int64)
     edge_keys = np.asarray(edge_keys, dtype=np.int64)
@@ -1511,7 +1514,7 @@ def _assign_anomalies_cost_gate(
     n_clusters = int(labels.max()) + 1 if np.any(labels >= 0) else 0
     use_density = density_power != 0.0 and core_distance is not None
     diagnostics: dict[str, Any] = {
-        "mode": "cost-gate density Dijkstra",
+        "mode": "original-space cost-gate density Dijkstra",
         "penalty_power": float(penalty_power),
         "reach": float(reach),
         "density_power": float(density_power) if use_density else 0.0,
@@ -1556,7 +1559,8 @@ def _assign_anomalies_cost_gate(
             ratio = core_distance[node] / density_reference[cluster]
             if density_clip and ratio < 1.0:
                 ratio = 1.0
-            return (orig_edge_sizes[edge_index] * ratio) / average[cluster]
+            density_factor = ratio ** float(density_power)
+            return (orig_edge_sizes[edge_index] * density_factor) / average[cluster]
     else:
         def relative(edge_index: int, node: int, cluster: int) -> float:
             return orig_edge_sizes[edge_index] / average[cluster]
