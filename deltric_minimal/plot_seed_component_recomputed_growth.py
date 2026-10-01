@@ -2404,7 +2404,7 @@ def main() -> None:
         ),
     )
     parser.add_argument(
-        "--gomory-point-cut-size", type=int, default=3,
+        "--gomory-point-cut-size", type=int, default=4,
         help="Maximum number of separator points in --gomory-pruning-mode points.",
     )
     parser.add_argument(
