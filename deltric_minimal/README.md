@@ -27,7 +27,7 @@ The default setup is:
 multi-D seed hard limit      0.8
 native-2D seed hard limit    0.1
 seed baseline                first significant edge-length mode, median fallback
-multi-D growth guards        original 1.5, projected 1.7
+multi-D growth guards        original 1.5, projected 2.8
 native-2D growth guards      original/projected 1.5
 initial relation             union original-space 50-NN
 minimum seed size            10 edges
