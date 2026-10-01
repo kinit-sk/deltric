@@ -28,7 +28,7 @@ if [[ "$DELTRIC_MODE" == "component_growth" || "$DELTRIC_MODE" == "growth" ]]; t
   HDBSCAN_SELECTION_METHOD="${HDBSCAN_SELECTION_METHOD:-eom}"
   HDBSCAN_CLUSTER_SELECTION_EPSILON="${HDBSCAN_CLUSTER_SELECTION_EPSILON:-0.0}"
   # Tuned separately on the held-out multi-D and native-2-D validation suites.
-  HARD_SEED_LIMIT="${HARD_SEED_LIMIT:-0.8}"
+  HARD_SEED_LIMIT="${HARD_SEED_LIMIT:-0.75}"
   SEED_HARD_LIMIT="${SEED_HARD_LIMIT:-$HARD_SEED_LIMIT}"
   SEED_HARD_LIMIT_2D="${SEED_HARD_LIMIT_2D:-0.1}"
   # Prefer the first significant edge-length mode; use its robust median
@@ -47,6 +47,9 @@ if [[ "$DELTRIC_MODE" == "component_growth" || "$DELTRIC_MODE" == "growth" ]]; t
   GROWTH_INITIAL_RELATION="${GROWTH_INITIAL_RELATION:-union}"
   GROWTH_KNN="${GROWTH_KNN:-50}"
   GROWTH_MIN_EDGES="${GROWTH_MIN_EDGES:-10}"
+  # Growth eligibility is intentionally a little less strict than final
+  # component eligibility; final noise labeling still uses GROWTH_MIN_EDGES.
+  GROWTH_SEED_MIN_EDGES="${GROWTH_SEED_MIN_EDGES:-8}"
   # knn_relaxed with the relaxed and strict seed limits equal is identical to
   # strict mode, so use the equivalent simpler mode explicitly.
   HARD_GATE_MODE="${HARD_GATE_MODE:-strict}"
@@ -219,6 +222,7 @@ if [[ "$DELTRIC_MODE" == "component_growth" || "$DELTRIC_MODE" == "growth" ]]; t
       --initial-relation "$GROWTH_INITIAL_RELATION" \
       --component-growth-knn "$GROWTH_KNN" \
       --component-growth-min-edges "$GROWTH_MIN_EDGES" \
+      --growth-seed-min-edges "$GROWTH_SEED_MIN_EDGES" \
       --hard-gate-mode "$HARD_GATE_MODE" \
       --no-redundancy-pruning \
       --gomory-hu-cut-size "$GOMORY_HU_CUT_SIZE" \

@@ -2581,6 +2581,14 @@ def main() -> None:
     parser.add_argument("--initial-relation", choices=("union", "mutual"), default="union")
     parser.add_argument("--component-growth-knn", type=int, default=50)
     parser.add_argument("--component-growth-min-edges", type=int, default=10)
+    parser.add_argument(
+        "--growth-seed-min-edges", type=int, default=8,
+        help=(
+            "Minimum seed-component edge count eligible for component growth. "
+            "The separate --component-growth-min-edges still controls final "
+            "cluster eligibility."
+        ),
+    )
     parser.add_argument("--hard-gate-mode", choices=(
         "strict", "separate_limits", "knn_relaxed", "knn_growth_relaxed", "knn_global"
     ), default="knn_relaxed")
@@ -2680,17 +2688,17 @@ def main() -> None:
             lengths, initial_mask,
         )
     seed_labels, seed_edge_counts, large_seed = _seed_components(
-        edge_keys, initial_mask, len(X), args.component_growth_min_edges,
+        edge_keys, initial_mask, len(X), args.growth_seed_min_edges,
     )
     recall10 = _projected_recall10(X, np.asarray(state["X_proj"], dtype=np.float64))
     growth = (
         _no_component_growth(
             edge_keys, seed_labels, seed_edge_counts,
-            args.component_growth_min_edges,
+            args.growth_seed_min_edges,
         )
         if args.no_component_growth else _sequential_growth(
             edge_keys, lengths, projected_lengths, initial_mask, seed_labels,
-            seed_edge_counts, args.component_growth_min_edges, recall10,
+            seed_edge_counts, args.growth_seed_min_edges, recall10,
             args.hard_growth_limit, args.projected_hard_growth_limit,
             args.restore_hard_limit, args.growth_restoration_mode,
         )
@@ -3254,6 +3262,7 @@ def main() -> None:
             if final_ari is not None else None
         ),
         "seed_edge_count": int(np.count_nonzero(initial_mask)),
+        "growth_seed_min_edges": int(args.growth_seed_min_edges),
         "large_seed_component_count": int(np.count_nonzero(large_seed)),
         "historical_boundary_edge_count": int(np.count_nonzero(seen)),
         "accepted_growth_edge_count": int(np.count_nonzero(growth["accepted_growth_mask"])),
