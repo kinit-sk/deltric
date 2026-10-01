@@ -2582,7 +2582,7 @@ def main() -> None:
     parser.add_argument("--component-growth-knn", type=int, default=50)
     parser.add_argument("--component-growth-min-edges", type=int, default=10)
     parser.add_argument(
-        "--growth-seed-min-edges", type=int, default=8,
+        "--growth-seed-min-edges", type=int, default=10,
         help=(
             "Minimum seed-component edge count eligible for component growth. "
             "The separate --component-growth-min-edges still controls final "

@@ -49,7 +49,7 @@ if [[ "$DELTRIC_MODE" == "component_growth" || "$DELTRIC_MODE" == "growth" ]]; t
   GROWTH_MIN_EDGES="${GROWTH_MIN_EDGES:-10}"
   # Growth eligibility is intentionally a little less strict than final
   # component eligibility; final noise labeling still uses GROWTH_MIN_EDGES.
-  GROWTH_SEED_MIN_EDGES="${GROWTH_SEED_MIN_EDGES:-8}"
+  GROWTH_SEED_MIN_EDGES="${GROWTH_SEED_MIN_EDGES:-10}"
   # knn_relaxed with the relaxed and strict seed limits equal is identical to
   # strict mode, so use the equivalent simpler mode explicitly.
   HARD_GATE_MODE="${HARD_GATE_MODE:-strict}"
