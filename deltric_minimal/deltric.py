@@ -57,6 +57,9 @@ class DelTriC:
                 "--initial-relation", "union", "--component-growth-knn", "50",
                 "--component-growth-min-edges", "10", "--growth-seed-min-edges", "10",
                 "--hard-gate-mode", "strict", "--projected-hard-limit", "--no-multiplicative-hard-limit",
+                # The current-stage runner deliberately leaves the legacy
+                # redundancy edge-pruning experiment disabled.
+                "--no-redundancy-pruning",
                 "--gomory-pruning-mode", "points", "--gomory-point-cut-size", "4",
                 "--gomory-hu-m2-max", "1.0", "--gomory-hu-shape-score-min", "12",
                 "--gomory-hu-min-triangle-edge-ratio", "0.3", "--post-growth-boundary-classification",

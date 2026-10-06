@@ -2388,7 +2388,9 @@ def main() -> None:
                         help="Native-2-D override for --projected-hard-growth-limit.")
     parser.add_argument(
         "--redundancy-pruning", action=argparse.BooleanOptionalAction,
-        default=True,
+        # Optional legacy diagnostic; current-stage component growth keeps it
+        # disabled unless explicitly requested.
+        default=False,
     )
     parser.add_argument("--redundancy-threshold", type=int, default=3)
     parser.add_argument("--redundancy-prune-limit", type=int, default=3)
@@ -2662,6 +2664,11 @@ def main() -> None:
         args.projected_hard_growth_limit = 2.0 * args.hard_growth_limit
     else:
         args.projected_hard_growth_limit = float(args.projected_hard_growth_limit)
+    # Native 2-D has no topology projection: X_proj is the standardized input
+    # itself. A second projected-space gate is redundant and must not cap the
+    # original-space growth gate.
+    if native_2d:
+        args.projected_hard_growth_limit = float("inf")
     X = StandardScaler().fit_transform(raw_X)
     # Use the production seed-construction path, but disable its subsequent
     # growth: this experiment owns all growth after initial_mask is obtained.
@@ -2676,7 +2683,7 @@ def main() -> None:
         growth_relaxed_hard_limit=0.9,
         local_knn_selectivity_threshold=args.local_knn_selectivity_threshold,
         local_knn_selectivity_scope=args.local_knn_selectivity_scope,
-        projected_hard_limit=args.projected_hard_limit,
+        projected_hard_limit=(False if native_2d else args.projected_hard_limit),
         multiplicative_hard_limit=args.multiplicative_hard_limit,
     )
     edge_keys = np.asarray(state["edge_keys"], dtype=np.int64)

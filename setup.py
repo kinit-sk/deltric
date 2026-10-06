@@ -5,7 +5,7 @@ ROOT = Path(__file__).parent
 
 setup(
     name="deltric",
-    version="0.4.0",
+    version="0.4.1",
     description="Delaunay Triangulation Clustering with original-space geometry",
     long_description=(ROOT / "deltric_minimal" / "README.md").read_text(),
     long_description_content_type="text/markdown",
