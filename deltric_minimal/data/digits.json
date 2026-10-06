@@ -1,0 +1,9 @@
+{
+  "family": "real_world",
+  "source": "sklearn built-in",
+  "description": "Digits dataset",
+  "name": "digits",
+  "n_samples": 1797,
+  "n_features": 64,
+  "n_clusters": 10
+}

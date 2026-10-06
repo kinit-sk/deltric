@@ -1,0 +1,9 @@
+{
+  "family": "blobs",
+  "cluster_std": 1.0,
+  "description": "IsoGaussian: n=5000, d=2, k=20",
+  "name": "blobs_large_2d_20c",
+  "n_samples": 5000,
+  "n_features": 2,
+  "n_clusters": 20
+}

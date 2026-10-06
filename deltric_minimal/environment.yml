@@ -1,0 +1,14 @@
+name: deltric-minimal
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - numpy=2.2.6
+  - scipy=1.15.3
+  - scikit-learn=1.7.2
+  - umap-learn=0.5.9.post2
+  - numba
+  - matplotlib=3.10.7
+  - networkx=3.3
+  - pandas=2.3.3
+  - statsmodels=0.14.5

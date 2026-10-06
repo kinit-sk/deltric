@@ -1,0 +1,11 @@
+{
+  "name": "shapes_2d_compound_easy_3600_k6",
+  "family": "compound_shapes_2d",
+  "n_samples": 3600,
+  "n_features": 2,
+  "n_clusters": 6,
+  "seed": 20260619,
+  "noise": 0.06,
+  "shift": 4.8,
+  "scale": 1.8
+}

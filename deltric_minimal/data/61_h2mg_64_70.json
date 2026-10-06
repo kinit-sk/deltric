@@ -1,0 +1,18 @@
+{
+  "name": "h2mg_64_70",
+  "family": "h2mg",
+  "n_samples": 2048,
+  "n_features": 64,
+  "n_clusters": 2,
+  "primary_labels": "labels0",
+  "secondary_labels": "labels1",
+  "random_state": 123,
+  "cluster_centers": [
+    500,
+    600
+  ],
+  "base_s": 70,
+  "effective_scale": 4480.0,
+  "achieved_kmeans_ari": 0.48184928678240724,
+  "source": "gagolewski/clustering-data-v1 .devel/generate_gKmg.py and generate_hKmg.py"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "v2_moons_2d_2500",
+  "family": "moons",
+  "n_samples": 2500,
+  "n_features": 2,
+  "n_clusters": 2,
+  "achieved_kmeans_ari": 0.494287889880843,
+  "target_range": [
+    0.3,
+    0.7
+  ],
+  "in_target_range": true,
+  "overlap_calibration_value": 0.0,
+  "base_seed_attempt": 0
+}

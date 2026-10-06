@@ -1,0 +1,19 @@
+{
+  "name": "v3_overlap_blobs_10d_4000_k6",
+  "family": "overlap_blobs",
+  "n_samples": 4000,
+  "n_features": 10,
+  "n_clusters": 6,
+  "achieved_kmeans_ari": 0.7393237131677312,
+  "target_range": [
+    0.3,
+    0.7
+  ],
+  "in_target_range": false,
+  "calibration_param": 3.8,
+  "calibration_attempt": 12,
+  "knn_cleaned_points": 180,
+  "outlier_method": "post_knn_cluster_radial_mean_plus_sigma",
+  "outlier_radius_sigma": 2.0,
+  "outliers": 104
+}

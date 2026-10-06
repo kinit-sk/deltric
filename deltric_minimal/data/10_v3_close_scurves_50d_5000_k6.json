@@ -1,0 +1,15 @@
+{
+  "name": "v3_close_scurves_50d_5000_k6",
+  "family": "close_manifolds_projected",
+  "n_samples": 5000,
+  "n_features": 50,
+  "n_clusters": 6,
+  "achieved_kmeans_ari": 0.31519457182439914,
+  "target_range": [
+    0.3,
+    0.7
+  ],
+  "in_target_range": true,
+  "calibration_param": 0.20238095238095238,
+  "calibration_attempt": 0
+}
