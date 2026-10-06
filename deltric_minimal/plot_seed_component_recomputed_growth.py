@@ -66,26 +66,30 @@ def _first_mode_seed_mask(
     *,
     min_peak_fraction: float = 0.20,
     max_valley_fraction: float = 0.60,
+    fallback_on_failure: bool = True,
 ) -> tuple[np.ndarray, dict]:
     """Use the first clearly separated log-length mode as a seed cutoff.
 
     This is deliberately a conservative special regime.  It accepts a first
-    valley only when two non-trivial peaks surround a sufficiently deep valley;
-    otherwise the exact supplied median-based mask is returned unchanged.
+    valley only when two non-trivial peaks surround a sufficiently deep valley.
+    When ``fallback_on_failure`` is false, a failed mode test produces an empty
+    seed mask instead of silently reverting to the median rule.
     """
     from scipy.ndimage import gaussian_filter1d
     from scipy.signal import find_peaks
 
     lengths = np.asarray(edge_lengths, dtype=np.float64)
     fallback = np.asarray(fallback_mask, dtype=bool)
+    failure_mask = fallback if fallback_on_failure else np.zeros_like(fallback)
     positive = lengths[np.isfinite(lengths) & (lengths > 0.0)]
     diagnostics: dict[str, object] = {
-        "mode": "median_fallback",
+        "mode": "median_fallback" if fallback_on_failure else "first_mode_no_fallback",
         "fallback_seed_edge_count": int(np.count_nonzero(fallback)),
+        "fallback_on_failure": bool(fallback_on_failure),
     }
     if len(positive) < 40:
         diagnostics["reason"] = "too_few_positive_edges"
-        return fallback, diagnostics
+        return failure_mask, diagnostics
 
     log_lengths = np.log(positive)
     bins = int(np.clip(np.sqrt(len(log_lengths)) * 2.0, 32, 96))
@@ -101,12 +105,12 @@ def _first_mode_seed_mask(
     })
     if len(peaks) < 2:
         diagnostics["reason"] = "fewer_than_two_significant_modes"
-        return fallback, diagnostics
+        return failure_mask, diagnostics
 
     first, second = int(peaks[0]), int(peaks[1])
     if second - first < 3:
         diagnostics["reason"] = "modes_not_separated"
-        return fallback, diagnostics
+        return failure_mask, diagnostics
     valley = first + int(np.argmin(smooth[first:second + 1]))
     valley_fraction = float(smooth[valley] / max(min(smooth[first], smooth[second]), 1e-12))
     diagnostics.update({
@@ -117,7 +121,7 @@ def _first_mode_seed_mask(
     })
     if valley_fraction > max_valley_fraction:
         diagnostics["reason"] = "valley_not_deep_enough"
-        return fallback, diagnostics
+        return failure_mask, diagnostics
 
     cutoff = float(np.exp((edges[valley] + edges[valley + 1]) / 2.0))
     selected = lengths <= cutoff
@@ -2365,6 +2369,10 @@ def main() -> None:
             "the median-based seed mask when the separation is weak."
         ),
     )
+    parser.add_argument(
+        "--first-mode-no-fallback", action="store_true",
+        help="When --seed-baseline=first_mode fails its mode test, use no seeds instead of the median mask.",
+    )
     parser.add_argument("--hard-growth-limit", type=float, default=0.05)
     parser.add_argument(
         "--no-component-growth", action="store_true",
@@ -2686,6 +2694,7 @@ def main() -> None:
     if args.seed_baseline == "first_mode":
         initial_mask, seed_baseline_diagnostics = _first_mode_seed_mask(
             lengths, initial_mask,
+            fallback_on_failure=not args.first_mode_no_fallback,
         )
     seed_labels, seed_edge_counts, large_seed = _seed_components(
         edge_keys, initial_mask, len(X), args.growth_seed_min_edges,
@@ -3153,8 +3162,9 @@ def main() -> None:
         fig.savefig(boundary_path, dpi=160, bbox_inches="tight")
         plt.close(fig)
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    if not args.metrics_only:
-        np.savez_compressed(
+    # Metrics-only skips figures and HDBSCAN, not the exact DelTriC result.
+    # This artifact is also the programmatic result contract.
+    np.savez_compressed(
             args.out.with_suffix(".npz"), X_proj=state["X_proj"], edge_keys=edge_keys,
             initial_mask=initial_mask, seed_labels=seed_labels,
             seed_edge_counts=seed_edge_counts, pre_redundancy_mask=pre_redundancy_mask,
@@ -3177,7 +3187,7 @@ def main() -> None:
             gomory_hu_pruned_mask=gomory_hu_pruned_mask,
             redundancy_skipped_component_mask=redundancy_state["skipped_component_mask"],
             **growth,
-        )
+    )
     summary = {
         "dataset": str(args.data), "out": str(args.out),
         "deltric_pipeline_seconds": float(deltric_pipeline_seconds),
