@@ -9,11 +9,38 @@ in this self-contained prototype.
 from __future__ import annotations
 
 import time
+import os
+import sys
+import tempfile
+from pathlib import Path
 from itertools import combinations
 
 import numpy as np
 from scipy.spatial import Delaunay
 from sklearn.decomposition import PCA
+
+
+def _configure_numba_cache() -> None:
+    """Use a cache that cannot collide across Python minor versions.
+
+    Numba cache artifacts are interpreter/ABI-specific.  Configure the cache
+    before importing UMAP (and therefore Numba), while respecting an explicit
+    user-provided ``NUMBA_CACHE_DIR``.
+    """
+    if os.environ.get("NUMBA_CACHE_DIR"):
+        return
+    tag = f"py{sys.version_info.major}{sys.version_info.minor}"
+    base = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+    target = base / "deltric" / "numba" / tag
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        target = Path(tempfile.gettempdir()) / "deltric" / "numba" / tag
+        target.mkdir(parents=True, exist_ok=True)
+    os.environ["NUMBA_CACHE_DIR"] = str(target)
+
+
+_configure_numba_cache()
 from umap import UMAP
 
 

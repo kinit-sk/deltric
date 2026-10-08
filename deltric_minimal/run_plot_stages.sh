@@ -8,7 +8,8 @@ if [[ -z "${CONDA_PREFIX:-}" && -f "$SCRIPT_DIR/.venv/bin/activate" ]]; then
   source "$SCRIPT_DIR/.venv/bin/activate"
 fi
 export MPLCONFIGDIR="${MPLCONFIGDIR:-/tmp/mplconfig}"
-export NUMBA_CACHE_DIR="${NUMBA_CACHE_DIR:-/tmp/numba_cache}"
+PYTHON_CACHE_TAG="$(python -c 'import sys; print(f"py{sys.version_info.major}{sys.version_info.minor}")')"
+export NUMBA_CACHE_DIR="${NUMBA_CACHE_DIR:-/tmp/deltric_numba_cache_${PYTHON_CACHE_TAG}}"
 mkdir -p "$MPLCONFIGDIR"
 
 # The default diagnostic uses the same seed construction and round-based,
@@ -38,7 +39,7 @@ if [[ "$DELTRIC_MODE" == "component_growth" || "$DELTRIC_MODE" == "growth" ]]; t
   # gate. Multi-D data uses UMAP only for topology and has its own tuned pair.
   # Legacy HARD_GROWTH_LIMIT / PROJECTED_HARD_GROWTH_LIMIT remain multi-D
   # aliases for one-off overrides.
-  HARD_GROWTH_LIMIT_MULTID="${HARD_GROWTH_LIMIT_MULTID:-${HARD_GROWTH_LIMIT:-1.5}}"
+  HARD_GROWTH_LIMIT_MULTID="${HARD_GROWTH_LIMIT_MULTID:-${HARD_GROWTH_LIMIT:-1.6}}"
   PROJECTED_HARD_GROWTH_LIMIT_MULTID="${PROJECTED_HARD_GROWTH_LIMIT_MULTID:-${PROJECTED_HARD_GROWTH_LIMIT:-2.8}}"
   OUTLIER_COST_GATE_REACH_MULTID="${OUTLIER_COST_GATE_REACH_MULTID:-${OUTLIER_COST_GATE_REACH:-15.0}}"
   HARD_GROWTH_LIMIT_2D="${HARD_GROWTH_LIMIT_2D:-1.5}"
@@ -49,7 +50,7 @@ if [[ "$DELTRIC_MODE" == "component_growth" || "$DELTRIC_MODE" == "growth" ]]; t
   GROWTH_MIN_EDGES="${GROWTH_MIN_EDGES:-10}"
   # Growth eligibility is intentionally a little less strict than final
   # component eligibility; final noise labeling still uses GROWTH_MIN_EDGES.
-  GROWTH_SEED_MIN_EDGES="${GROWTH_SEED_MIN_EDGES:-8}"
+  GROWTH_SEED_MIN_EDGES="${GROWTH_SEED_MIN_EDGES:-10}"
   # knn_relaxed with the relaxed and strict seed limits equal is identical to
   # strict mode, so use the equivalent simpler mode explicitly.
   HARD_GATE_MODE="${HARD_GATE_MODE:-strict}"
