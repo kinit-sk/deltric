@@ -493,6 +493,22 @@ def _draw_component_loopiness(ax, X_proj: np.ndarray, edge_keys: np.ndarray,
     ax.set_yticks([])
 
 
+def _triangle_edge_indices(edge_keys: np.ndarray,
+                           triangles: np.ndarray) -> np.ndarray:
+    """Map each triangle ``(a, b, c)`` to its edges ``(ab, ac, bc)``."""
+    edge_index = {
+        (int(u), int(v)): index for index, (u, v) in enumerate(edge_keys)
+    }
+    triangle_edges = np.empty((len(triangles), 3), dtype=np.int64)
+    for index, (a, b, c) in enumerate(triangles):
+        triangle_edges[index] = (
+            edge_index[tuple(sorted((int(a), int(b))))],
+            edge_index[tuple(sorted((int(a), int(c))))],
+            edge_index[tuple(sorted((int(b), int(c))))],
+        )
+    return triangle_edges
+
+
 def _add_component_area_perimeter_metrics(topology: dict, edge_keys: np.ndarray,
                                           retained_mask: np.ndarray,
                                           triangles: np.ndarray,
@@ -514,17 +530,7 @@ def _add_component_area_perimeter_metrics(topology: dict, edge_keys: np.ndarray,
     _, supported_triangle_counts = _component_supported_triangle_counts(
         edge_keys, triangles, labels, edge_bearing, retained_mask,
     )
-    edge_index = {
-        (int(u), int(v)): index for index, (u, v) in enumerate(edge_keys)
-    }
-    triangle_edges = np.array([
-        [
-            edge_index[tuple(sorted((int(a), int(b))))],
-            edge_index[tuple(sorted((int(a), int(c))))],
-            edge_index[tuple(sorted((int(b), int(c))))],
-        ]
-        for a, b, c in triangles
-    ], dtype=np.int64)
+    triangle_edges = _triangle_edge_indices(edge_keys, triangles)
     coords = np.asarray(X_proj, dtype=np.float64)
     triangle_points = coords[triangles]
     triangle_area = 0.5 * np.abs(
@@ -825,16 +831,7 @@ def _outer_hull_edge_mask(edge_keys: np.ndarray, retained_mask: np.ndarray,
             "outer-hull metrics require a 2D Delaunay triangulation "
             "with triangular simplices"
         )
-    edge_index_by_key = {
-        (int(u), int(v)): index for index, (u, v) in enumerate(edge_keys)
-    }
-    triangle_edge_indices = np.empty((len(triangles), 3), dtype=np.int64)
-    for triangle_index, (a, b, c) in enumerate(triangles):
-        triangle_edge_indices[triangle_index] = (
-            edge_index_by_key[tuple(sorted((int(a), int(b))))],
-            edge_index_by_key[tuple(sorted((int(a), int(c))))],
-            edge_index_by_key[tuple(sorted((int(b), int(c))))],
-        )
+    triangle_edge_indices = _triangle_edge_indices(edge_keys, triangles)
     edge_triangles: list[list[int]] = [[] for _ in range(len(edge_keys))]
     for triangle_index, triangle_edges in enumerate(triangle_edge_indices):
         for edge_index in triangle_edges:
@@ -899,16 +896,7 @@ def _component_supported_triangle_counts(
         eligible_points[u] & eligible_points[v]
         & (labels[u] == labels[v])
     )
-    edge_index = {
-        (int(a), int(b)): index for index, (a, b) in enumerate(edge_keys)
-    }
-    triangle_edges = np.empty((len(triangles), 3), dtype=np.int64)
-    for index, (a, b, c) in enumerate(triangles):
-        triangle_edges[index] = (
-            edge_index[tuple(sorted((int(a), int(b))))],
-            edge_index[tuple(sorted((int(a), int(c))))],
-            edge_index[tuple(sorted((int(b), int(c))))],
-        )
+    triangle_edges = _triangle_edge_indices(edge_keys, triangles)
 
     triangle_labels = labels[triangles]
     triangle_eligible = eligible_points[triangles]
@@ -1701,8 +1689,7 @@ def _edge_redundancy_pruning(
 def _draw_final_components(ax, X_proj: np.ndarray, edge_keys: np.ndarray,
                            segments: np.ndarray, retained_mask: np.ndarray,
                            redundancy_pruned_mask: np.ndarray | None = None,
-                           assigned_labels: np.ndarray | None = None,
-                           added_outlier_mask: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
+                           assigned_labels: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
     """Draw final graph components and optional post-graph point assignments."""
     from matplotlib.collections import LineCollection
     import matplotlib.pyplot as plt
@@ -2569,10 +2556,9 @@ def main() -> None:
     )
     edge_keys = np.asarray(state["edge_keys"], dtype=np.int64)
     lengths = np.asarray(state["orig_edge_sizes"], dtype=np.float64)
+    X_proj = np.asarray(state["X_proj"], dtype=np.float64)
     projected_lengths = np.linalg.norm(
-        np.asarray(state["X_proj"], dtype=np.float64)[edge_keys[:, 0]]
-        - np.asarray(state["X_proj"], dtype=np.float64)[edge_keys[:, 1]],
-        axis=1,
+        X_proj[edge_keys[:, 0]] - X_proj[edge_keys[:, 1]], axis=1,
     )
     initial_mask = np.asarray(state["initial_mask"], dtype=bool)
     seed_baseline_diagnostics: dict[str, object] = {
@@ -2587,7 +2573,7 @@ def main() -> None:
     seed_labels, seed_edge_counts, large_seed = _seed_components(
         edge_keys, initial_mask, len(X), args.growth_seed_min_edges,
     )
-    recall10 = _projected_recall10(X, np.asarray(state["X_proj"], dtype=np.float64))
+    recall10 = _projected_recall10(X, X_proj)
     growth = (
         _no_component_growth(
             edge_keys, seed_labels, seed_edge_counts,
@@ -2669,7 +2655,7 @@ def main() -> None:
         edge_keys, bridge_base_mask, len(X),
         minimum_edges=args.component_growth_min_edges,
         edge_lengths=lengths,
-        X_proj=np.asarray(state["X_proj"], dtype=np.float64),
+        X_proj=X_proj,
     )
     # Geometry is evaluated on the restored reference graph in both modes.
     # In virtual mode these edges inform only the shape measurement: they do
@@ -2687,12 +2673,12 @@ def main() -> None:
             edge_keys, shape_reference_mask, len(X),
             minimum_edges=args.component_growth_min_edges,
             edge_lengths=lengths,
-            X_proj=np.asarray(state["X_proj"], dtype=np.float64),
+            X_proj=X_proj,
         )
         _add_component_area_perimeter_metrics(
             shape_reference_topology, edge_keys, shape_reference_mask,
             np.asarray(state["triangles"], dtype=np.int64),
-            np.asarray(state["X_proj"], dtype=np.float64),
+            X_proj,
             X_original=X,
         )
     point_m2_eligible = np.ones(len(X), dtype=bool)
@@ -2806,8 +2792,7 @@ def main() -> None:
             edge_sizes=lengths,
         )
     removed_bridge_mask = redundancy_state["pruned_mask"] | gomory_hu_pruned_mask
-    final_base_mask = bridge_base_mask
-    final_retained_mask = final_base_mask & ~removed_bridge_mask
+    final_retained_mask = bridge_base_mask & ~removed_bridge_mask
     seen = growth["first_seen_mask"]
     segments = _segments(state["X_proj"], edge_keys)
     truth_labels = (
@@ -2876,7 +2861,6 @@ def main() -> None:
     final_assignment_mask = final_retained_mask | np.asarray(
         outlier_growth_state["accepted_edge_mask"], dtype=bool,
     )
-    hdbscan_metrics = None
     final_labels, final_component_points = _final_graph_components(
         edge_keys, final_assignment_mask, len(X),
     )
@@ -2907,6 +2891,7 @@ def main() -> None:
             "predicted_outlier_count": int(np.count_nonzero(y_pred_outlier)),
         }
     deltric_pipeline_seconds = time.perf_counter() - run_started
+    hdbscan_metrics = None
     hdbscan_fit_seconds = None
     if not args.metrics_only:
         # Fit only in standardized original space.  Reuse X_proj for the
@@ -2962,7 +2947,6 @@ def main() -> None:
             final_assignment_mask,
             redundancy_pruned_mask=removed_bridge_mask,
             assigned_labels=final_prediction,
-            added_outlier_mask=outlier_growth_state["added_point_mask"],
         )
         growth_note = (
             f"; added={outlier_growth_state['metrics']['added_outlier_count']}"
@@ -2984,7 +2968,7 @@ def main() -> None:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots(figsize=(9, 8), constrained_layout=True)
         _draw_component_m2(
-            ax, np.asarray(state["X_proj"], dtype=np.float64), edge_keys,
+            ax, X_proj, edge_keys,
             bridge_base_mask, pre_gomory_topology,
         )
         fig.suptitle(f"Component M2 diagnostic — {args.data.stem}", fontsize=13)
@@ -2996,7 +2980,7 @@ def main() -> None:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots(figsize=(9, 8), constrained_layout=True)
         _draw_component_loopiness(
-            ax, np.asarray(state["X_proj"], dtype=np.float64), edge_keys,
+            ax, X_proj, edge_keys,
             bridge_base_mask, pre_gomory_topology,
         )
         fig.suptitle(f"Component loopiness diagnostic — {args.data.stem}", fontsize=13)
@@ -3010,7 +2994,7 @@ def main() -> None:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots(figsize=(9, 8), constrained_layout=True)
         _draw_component_area_perimeter(
-            ax, np.asarray(state["X_proj"], dtype=np.float64), edge_keys,
+            ax, X_proj, edge_keys,
             shape_reference_mask, shape_reference_topology,
         )
         fig.suptitle(f"Component area/border diagnostic — {args.data.stem}", fontsize=13)
@@ -3026,7 +3010,7 @@ def main() -> None:
         )
         _save_component_shape_space_comparison(
             comparison_path,
-            np.asarray(state["X_proj"], dtype=np.float64),
+            X_proj,
             X,
             edge_keys,
             shape_reference_mask,
@@ -3036,7 +3020,7 @@ def main() -> None:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots(figsize=(9, 8), constrained_layout=True)
         _draw_restoration_boundary(
-            ax, np.asarray(state["X_proj"], dtype=np.float64), edge_keys,
+            ax, X_proj, edge_keys,
             bridge_base_mask, restoration_boundary_mask,
         )
         fig.suptitle(

@@ -70,7 +70,7 @@ def _component_boundary_scores(X: np.ndarray, X_proj: np.ndarray,
     for component in np.flatnonzero(large):
         members = np.flatnonzero(labels == component)
         edge_indices = np.unique(np.concatenate([incident[point] for point in members]))
-        q25, median, q75 = np.percentile(lengths[edge_indices], [25.0, 50.0, 75.0])
+        _, median, q75 = np.percentile(lengths[edge_indices], [25.0, 50.0, 75.0])
         component_median[component] = median
         component_q75[component] = q75
         component_right_spread[component] = max(float(q75 - median), 1e-12)
@@ -293,7 +293,7 @@ def main() -> None:
 
     fig, axes = plt.subplots(2, 2, figsize=(16, 14), constrained_layout=True)
     _draw_seed_truth(axes[0, 0], state["X_proj"], segments, seed_mask, truth_labels,
-                     f"seed components (orange), original labels (points)")
+                     "seed components (orange), original labels (points)")
     _draw_boundary_metric(
         axes[0, 1], state["X_proj"], segments, large_points, seed_mask,
         scores["boundary_mask"], scores["boundary_length_relative_display"],

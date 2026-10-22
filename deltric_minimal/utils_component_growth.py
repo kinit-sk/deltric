@@ -128,7 +128,7 @@ def _two_hop_edge_selectivity(
     edge_keys = np.asarray(edge_keys, dtype=np.int64)
     n_edges = len(edge_keys)
     adjacency = [[] for _ in range(n_points)]
-    for edge_index, (u, v) in enumerate(edge_keys):
+    for u, v in edge_keys:
         adjacency[int(u)].append(int(v))
         adjacency[int(v)].append(int(u))
 
@@ -178,95 +178,6 @@ def _component_state(edge_keys: np.ndarray, edge_mask: np.ndarray,
     return labels, edge_counts
 
 
-def _grow_components(edge_keys: np.ndarray, orig_edge_sizes: np.ndarray,
-                     blue_mask: np.ndarray, hard_allowed: np.ndarray,
-                     initial_mask: np.ndarray, mild_limit: float,
-                     n_points: int, component_min_edges: int) -> dict[str, Any]:
-    """Grow components using frozen component-local statistics per wave.
-
-    The largest current component is processed first.  Within a wave the
-    component median and IQR are fixed; accepted edges are then added as a
-    batch, the component labels are recomputed, and the statistics are
-    recomputed for the next wave.  Components smaller than
-    ``component_min_edges`` are not excluded from growth; that parameter is a
-    reporting/coloring threshold, matching the experiment script.
-    """
-    final_mask = np.asarray(initial_mask, dtype=bool).copy()
-    grown_mask = np.zeros(len(edge_keys), dtype=bool)
-    automatic_mask = np.zeros(len(edge_keys), dtype=bool)
-    blue_growth_mask = np.zeros(len(edge_keys), dtype=bool)
-    done_nodes = np.zeros(n_points, dtype=bool)
-    iterations = 0
-    growth_waves = []
-
-    while True:
-        labels, edge_counts = _component_state(edge_keys, final_mask, n_points)
-        available = [
-            c for c in range(len(edge_counts))
-            if not np.any(done_nodes[labels == c])
-        ]
-        if not available:
-            break
-        component = max(
-            available,
-            key=lambda c: (int(edge_counts[c]), int(np.count_nonzero(labels == c))),
-        )
-        active_nodes = labels == component
-        if edge_counts[component] == 0:
-            done_nodes[active_nodes] = True
-            continue
-
-        while True:
-            incident = active_nodes[edge_keys[:, 0]] | active_nodes[edge_keys[:, 1]]
-            internal = active_nodes[edge_keys[:, 0]] & active_nodes[edge_keys[:, 1]]
-            internal_lengths = orig_edge_sizes[final_mask & internal]
-            if len(internal_lengths) == 0:
-                break
-            local = _percentile_stats(internal_lengths)
-            mild_threshold = local["median"] + float(mild_limit) * local["iqr"]
-
-            boundary = incident & ~final_mask
-            automatic = boundary & hard_allowed & (orig_edge_sizes <= mild_threshold)
-            gray_blue = boundary & hard_allowed & ~automatic & blue_mask
-            accepted = automatic | gray_blue
-            if not np.any(accepted):
-                break
-
-            final_mask[accepted] = True
-            grown_mask[accepted] = True
-            automatic_mask[automatic] = True
-            blue_growth_mask[gray_blue] = True
-            iterations += 1
-            growth_waves.append({
-                "component_before": int(component),
-                "accepted": int(np.count_nonzero(accepted)),
-                "automatic": int(np.count_nonzero(automatic)),
-                "blue": int(np.count_nonzero(gray_blue)),
-                "mild_threshold": float(mild_threshold),
-                "component_median": local["median"],
-                "component_iqr": local["iqr"],
-            })
-
-            labels, edge_counts = _component_state(edge_keys, final_mask, n_points)
-            active_point = int(np.flatnonzero(active_nodes)[0])
-            active_nodes = labels == labels[active_point]
-
-        done_nodes[active_nodes] = True
-
-    labels, edge_counts = _component_state(edge_keys, final_mask, n_points)
-    return {
-        "final_mask": final_mask,
-        "grown_mask": grown_mask,
-        "automatic_growth_mask": automatic_mask,
-        "blue_growth_mask": blue_growth_mask,
-        "labels": labels,
-        "edge_counts": edge_counts,
-        "large_components": edge_counts > int(component_min_edges),
-        "iterations": int(iterations),
-        "growth_waves": growth_waves,
-    }
-
-
 def _grow_components_fast(edge_keys: np.ndarray, orig_edge_sizes: np.ndarray,
                           blue_mask: np.ndarray, hard_allowed: np.ndarray,
                           initial_mask: np.ndarray, mild_limit: float,
@@ -282,14 +193,15 @@ def _grow_components_fast(edge_keys: np.ndarray, orig_edge_sizes: np.ndarray,
                           outer_relaxation: float = 0.25,
                           outer_transition_width: float = 0.4054651081,
                           ) -> dict[str, Any]:
-    """Equivalent growth traversal using a dynamic union-find graph.
+    """Grow components using frozen component-local statistics per wave.
 
-    The reference implementation above intentionally mirrors the exploratory
-    code and rebuilds connected components after every wave.  That becomes
-    unnecessarily expensive when the mutual-kNN seed graph contains many
-    small components.  This implementation maintains component members and
-    retained-edge sets incrementally; thresholding and batch growth semantics
-    are unchanged.
+    The largest current component is processed first.  Within a wave the
+    component median and IQR are fixed; accepted edges are then added as a
+    batch and the statistics are recomputed for the next wave.  Component
+    members and retained-edge sets are maintained incrementally with a
+    dynamic union-find graph instead of rebuilding connected components after
+    every wave.  Components smaller than ``component_min_edges`` are not
+    excluded from growth; that parameter is a reporting/coloring threshold.
     """
     edge_keys = np.asarray(edge_keys, dtype=np.int64)
     final_mask = np.asarray(initial_mask, dtype=bool).copy()
@@ -800,17 +712,15 @@ def component_growth_graph(
         growth_proj_hard_threshold, growth_proj_stats = _hard_threshold(
             proj_sizes, growth_hard_limit, neighbor_stat, multiplicative_hard_limit
         )
-        projected_hard_mask = proj_sizes > growth_proj_hard_threshold
-    else:
-        growth_proj_hard_threshold, growth_proj_stats = None, None
-        projected_hard_mask = np.zeros(len(edge_keys), dtype=bool)
-    if projected_hard_limit:
         seed_proj_hard_threshold, seed_proj_stats = _hard_threshold(
             proj_sizes, seed_hard_limit, neighbor_stat, multiplicative_hard_limit
         )
+        projected_hard_mask = proj_sizes > growth_proj_hard_threshold
         seed_projected_hard_mask = proj_sizes > seed_proj_hard_threshold
     else:
-        seed_proj_hard_threshold, seed_proj_stats = None, None
+        growth_proj_hard_threshold = growth_proj_stats = None
+        seed_proj_hard_threshold = seed_proj_stats = None
+        projected_hard_mask = np.zeros(len(edge_keys), dtype=bool)
         seed_projected_hard_mask = np.zeros(len(edge_keys), dtype=bool)
     original_hard_mask = orig_sizes > growth_orig_hard_threshold
     hard_allowed = ~(original_hard_mask | projected_hard_mask)
@@ -873,32 +783,22 @@ def component_growth_graph(
             and float(local_knn_selectivity_threshold) < 1.0
         )
     )
-    if hard_gate_mode == "separate_limits":
-        seed_relaxed_orig_threshold = growth_relaxed_orig_threshold = None
-        seed_relaxed_proj_threshold = growth_relaxed_proj_threshold = None
-        seed_relaxed_orig_stats = growth_relaxed_orig_stats = None
-        seed_relaxed_proj_stats = growth_relaxed_proj_stats = None
-        seed_relaxed_allowed = seed_hard_allowed.copy()
-        growth_relaxed_allowed = hard_allowed.copy()
-        growth_allowed = hard_allowed.copy()
-        initial_allowed = seed_hard_allowed
-        seed_selective = np.zeros(len(edge_keys), dtype=bool)
-        growth_selective = np.zeros(len(edge_keys), dtype=bool)
-    elif relaxed_mode_active:
-        seed_relaxed_orig_threshold, seed_relaxed_orig_stats = _hard_threshold(
+    # ``separate_limits`` and ``strict`` never activate the relaxed gate.
+    if relaxed_mode_active:
+        seed_relaxed_orig_threshold, _ = _hard_threshold(
             orig_sizes, seed_relaxed_hard_limit, neighbor_stat,
             multiplicative_hard_limit,
         )
-        growth_relaxed_orig_threshold, growth_relaxed_orig_stats = _hard_threshold(
+        growth_relaxed_orig_threshold, _ = _hard_threshold(
             orig_sizes, growth_relaxed_hard_limit, neighbor_stat,
             multiplicative_hard_limit,
         )
         if projected_hard_limit:
-            seed_relaxed_proj_threshold, seed_relaxed_proj_stats = _hard_threshold(
+            seed_relaxed_proj_threshold, _ = _hard_threshold(
                 proj_sizes, seed_relaxed_hard_limit, neighbor_stat,
                 multiplicative_hard_limit,
             )
-            growth_relaxed_proj_threshold, growth_relaxed_proj_stats = _hard_threshold(
+            growth_relaxed_proj_threshold, _ = _hard_threshold(
                 proj_sizes, growth_relaxed_hard_limit, neighbor_stat,
                 multiplicative_hard_limit,
             )
@@ -906,7 +806,6 @@ def component_growth_graph(
             growth_relaxed_projected_mask = proj_sizes > growth_relaxed_proj_threshold
         else:
             seed_relaxed_proj_threshold = growth_relaxed_proj_threshold = None
-            seed_relaxed_proj_stats = growth_relaxed_proj_stats = None
             seed_relaxed_projected_mask = growth_relaxed_projected_mask = np.zeros(
                 len(edge_keys), dtype=bool
             )
@@ -963,8 +862,6 @@ def component_growth_graph(
     else:
         seed_relaxed_orig_threshold = growth_relaxed_orig_threshold = None
         seed_relaxed_proj_threshold = growth_relaxed_proj_threshold = None
-        seed_relaxed_orig_stats = growth_relaxed_orig_stats = None
-        seed_relaxed_proj_stats = growth_relaxed_proj_stats = None
         seed_relaxed_allowed = seed_hard_allowed.copy()
         growth_relaxed_allowed = hard_allowed.copy()
         growth_allowed = hard_allowed.copy()
@@ -978,7 +875,7 @@ def component_growth_graph(
         if edge_rule_scope in {"both", "seed"}:
             initial_allowed = initial_allowed & ~edge_rule_prune_mask
         if edge_rule_scope in {"both", "growth"}:
-            # Both are consumed by _grow_components: ``hard_allowed`` is the
+            # Both are consumed by _grow_components_fast: ``hard_allowed`` is the
             # strict gate, ``growth_allowed`` the relaxed one.
             hard_allowed = hard_allowed & ~edge_rule_prune_mask
             growth_allowed = growth_allowed & ~edge_rule_prune_mask
@@ -1097,15 +994,15 @@ def component_growth_graph(
     return state
 
 
-def _labels_from_components(labels: np.ndarray, edge_counts: np.ndarray,
+def _labels_from_components(labels: np.ndarray,
                             min_cluster_size: int) -> np.ndarray:
+    """Relabel components with at least ``min_cluster_size`` points as 0..k-1."""
     result = np.full(len(labels), -1, dtype=int)
-    label_id = 0
-    for component, count in enumerate(np.bincount(labels)):
-        points = np.flatnonzero(labels == component)
-        if len(points) >= int(min_cluster_size):
-            result[points] = label_id
-            label_id += 1
+    sizes = np.bincount(labels)
+    for label_id, component in enumerate(
+        np.flatnonzero(sizes >= int(min_cluster_size))
+    ):
+        result[labels == component] = label_id
     return result
 
 
@@ -1131,13 +1028,10 @@ def _merge_component_outliers(
     The cluster statistics are computed from retained intra-cluster graph
     edges in the original space.  ``None`` disables the operation.
     """
-    labels = _labels_from_components(
-        component_labels, np.zeros(0, dtype=np.int64), min_cluster_size
+    labels = np.asarray(
+        _labels_from_components(component_labels, min_cluster_size),
+        dtype=np.int64,
     )
-    # The helper above only needs component labels for the point-size test;
-    # reconstructing from components is done directly here because the
-    # component edge counts are not needed for the merge rule.
-    labels = np.asarray(labels, dtype=np.int64)
     merged = labels.copy()
     merged_mask = np.zeros(len(labels), dtype=bool)
     target_for_point = np.full(len(labels), -1, dtype=np.int64)
@@ -1173,7 +1067,7 @@ def _merge_component_outliers(
     # clusters.  This deliberately uses the full triangulation, because the
     # point may be an outlier precisely because its connecting edge was
     # removed during pruning.
-    connections: list[dict[int, int]] = [dict() for _ in range(len(labels))]
+    connections: list[dict[int, int]] = [{} for _ in range(len(labels))]
     for u, v in edge_keys:
         lu, lv = int(labels[u]), int(labels[v])
         if lu < 0 and lv >= 0:
@@ -1599,15 +1493,10 @@ def _assign_anomalies_cost_gate(
 
 
 def cluster_tri(
-    X, prune_param=1.0, merge_param=None, min_cluster_size=10,
-    dim_reduction="umap", back_proj=True, anomaly_sensitivity=0.0,
-    prune_mode="component_growth", umap_n_epochs=100, umap_n_neighbors=15,
-    hard_limit=1.0, mild_limit=-0.5, neighbor_stat="median", random_state=42,
-    project_dim=2, profile_phases=False, projected_hard_limit=True,
-    multiplicative_hard_limit=False, auto_threshold=False, prune_regime="none",
-    pointwise_bridge_pruning=False, point_edge_ratio=1.5,
-    point_edge_compare="ratio", point_edge_subset="all", point_edge_gap=0.5,
-    bridge_chain_len=4, component_growth_initial_relation="mutual",
+    X, *, min_cluster_size=10, dim_reduction="umap", back_proj=True,
+    umap_n_epochs=100, umap_n_neighbors=15, hard_limit=1.0, mild_limit=-0.5,
+    neighbor_stat="median", project_dim=2, projected_hard_limit=True,
+    multiplicative_hard_limit=False, component_growth_initial_relation="mutual",
     component_growth_growth_relation="union", component_growth_knn=30,
     component_growth_min_edges=10,
     component_growth_seed_hard_limit=None,
@@ -1636,9 +1525,8 @@ def cluster_tri(
 ):
     """Cluster using the component-growth graph.
 
-    Legacy-only arguments are accepted for estimator compatibility but are not
-    used by this backend.  ``prune_param`` and merge/anomaly settings do not
-    change the tested growth rule; ``hard_limit`` and ``mild_limit`` do.
+    Legacy-backend arguments (``prune_param``, ``random_state``, ...) are
+    accepted through ``**kwargs`` for estimator compatibility and ignored.
     """
     state = component_growth_graph(
         X, dim_reduction=dim_reduction, back_proj=back_proj,
@@ -1671,9 +1559,7 @@ def cluster_tri(
         edge_rule=component_growth_edge_rule,
         edge_rule_scope=component_growth_edge_rule_scope,
     )
-    labels = _labels_from_components(
-        state["labels"], state["edge_counts"], min_cluster_size
-    )
+    labels = _labels_from_components(state["labels"], min_cluster_size)
     pre_merge_labels = labels.copy()
     labels, merge_diagnostics = _merge_component_outliers(
         np.asarray(X), state["edge_keys"], state["orig_edge_sizes"],
