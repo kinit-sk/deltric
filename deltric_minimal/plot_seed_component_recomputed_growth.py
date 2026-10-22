@@ -42,6 +42,7 @@ sys.path.insert(0, str(ROOT))
 
 from utils_component_growth import (  # noqa: E402
     _assign_anomalies_cost_gate,
+    _group_indices_by_label,
     _knn_core_distance,
     component_growth_graph,
 )
@@ -270,11 +271,11 @@ def _component_topology_metrics(edge_keys: np.ndarray, retained_mask: np.ndarray
     labels, edge_bearing = _final_graph_components(edge_keys, retained_mask, n_points)
     retained = np.flatnonzero(retained_mask)
     components: list[dict] = []
+    edge_groups = _group_indices_by_label(labels[edge_keys[:, 0]], retained)
+    # Only endpoints of the current component are read from this workspace.
+    point_to_local = np.empty(n_points, dtype=np.int64) if edge_lengths is not None else None
     for component in np.unique(labels[edge_bearing]):
-        edge_indices = retained[
-            (labels[edge_keys[retained, 0]] == component)
-            & (labels[edge_keys[retained, 1]] == component)
-        ]
+        edge_indices = edge_groups[int(component)]
         point_count = int(len(np.unique(edge_keys[edge_indices])))
         edge_count = int(len(edge_indices))
         if edge_count < minimum_edges or point_count == 0:
@@ -291,7 +292,6 @@ def _component_topology_metrics(edge_keys: np.ndarray, retained_mask: np.ndarray
         })
         if edge_lengths is not None:
             local_points = np.unique(edge_keys[edge_indices])
-            point_to_local = np.full(n_points, -1, dtype=np.int64)
             point_to_local[local_points] = np.arange(len(local_points))
             local_u = point_to_local[edge_keys[edge_indices, 0]]
             local_v = point_to_local[edge_keys[edge_indices, 1]]
@@ -568,25 +568,29 @@ def _add_component_area_perimeter_metrics(topology: dict, edge_keys: np.ndarray,
     if len(retained_edges):
         np.add.at(retained_degree, retained_edges[:, 0], 1)
         np.add.at(retained_degree, retained_edges[:, 1], 1)
+    vertices = labels[triangles]
+    eligible_triangles = (
+        np.all(vertices == vertices[:, :1], axis=1)
+        & np.all(retained_mask[triangle_edges], axis=1)
+    )
+    triangle_groups = _group_indices_by_label(
+        vertices[:, 0], np.flatnonzero(eligible_triangles),
+    )
+    edge_groups = _group_indices_by_label(
+        labels[edge_keys[:, 0]], np.flatnonzero(retained_mask),
+    )
+    primitive_boundary = (
+        (supported_triangle_counts == 1)
+        & (retained_degree[edge_keys[:, 0]] > 1)
+        & (retained_degree[edge_keys[:, 1]] > 1)
+    )
+    empty = np.empty(0, dtype=np.int64)
     for item in topology["components"]:
         component = item["component_label"]
-        vertices = labels[triangles]
-        internal_triangle = (
-            np.all(vertices == component, axis=1)
-            & np.all(retained_mask[triangle_edges], axis=1)
-        )
-        component_edges = (
-            retained_mask
-            & (labels[edge_keys[:, 0]] == component)
-            & (labels[edge_keys[:, 1]] == component)
-        )
-        exterior_hull_edges = component_edges & hull_edge_mask
-        gomory_primitive_boundary_edges = (
-            component_edges
-            & (supported_triangle_counts == 1)
-            & (retained_degree[edge_keys[:, 0]] > 1)
-            & (retained_degree[edge_keys[:, 1]] > 1)
-        )
+        internal_triangle = triangle_groups.get(component, empty)
+        component_edges = edge_groups.get(component, empty)
+        exterior_hull_edges = component_edges[hull_edge_mask[component_edges]]
+        gomory_primitive_boundary_edges = component_edges[primitive_boundary[component_edges]]
         area = float(np.sum(triangle_area[internal_triangle]))
         original_area = float(np.sum(original_triangle_area[internal_triangle]))
         exterior_perimeter = float(np.sum(projected_lengths[exterior_hull_edges]))
@@ -605,10 +609,8 @@ def _add_component_area_perimeter_metrics(topology: dict, edge_keys: np.ndarray,
             if original_gomory_perimeter > 0.0 else None
         )
         item["triangle_area_border_length"] = {
-            "triangle_count": int(np.count_nonzero(internal_triangle)),
-            "gomory_primitive_boundary_edge_count": int(np.count_nonzero(
-                gomory_primitive_boundary_edges,
-            )),
+            "triangle_count": int(len(internal_triangle)),
+            "gomory_primitive_boundary_edge_count": int(len(gomory_primitive_boundary_edges)),
             "gomory_primitive_boundary_length": gomory_perimeter,
             "gomory_primitive_boundary_definition": (
                 "retained component edge with exactly one supported "
@@ -617,9 +619,7 @@ def _add_component_area_perimeter_metrics(topology: dict, edge_keys: np.ndarray,
             ),
             "internal_triangle_area": area,
             "original_internal_triangle_area": original_area,
-            "exterior_hull_border_edge_count": int(np.count_nonzero(
-                exterior_hull_edges,
-            )),
+            "exterior_hull_border_edge_count": int(len(exterior_hull_edges)),
             "exterior_hull_border_length": exterior_perimeter,
             "area_over_gomory_boundary_length": (
                 area / gomory_perimeter if gomory_perimeter > 0.0 else None
@@ -1198,12 +1198,11 @@ def _candidate_vertex_cut_mask(
     pruned_mask = np.zeros(len(edge_keys), dtype=bool)
     summaries: list[dict] = []
 
+    edge_groups = _group_indices_by_label(
+        labels[edge_keys[:, 0]], np.flatnonzero(retained_mask),
+    )
     for component in np.unique(labels[edge_bearing_points]):
-        edge_indices = np.flatnonzero(
-            retained_mask
-            & (labels[edge_keys[:, 0]] == component)
-            & (labels[edge_keys[:, 1]] == component)
-        )
+        edge_indices = edge_groups[int(component)]
         nodes = np.unique(edge_keys[edge_indices].ravel())
         n_nodes = len(nodes)
         minimum_side = max(
@@ -1892,7 +1891,10 @@ def _sequential_growth(edge_keys: np.ndarray, lengths: np.ndarray,
     n_points = len(seed_labels)
     n_components = len(seed_edge_counts)
     parent = np.arange(n_components, dtype=np.int64)
-    members = [set(np.flatnonzero(seed_labels == component)) for component in range(n_components)]
+    point_groups = _group_indices_by_label(seed_labels)
+    empty = np.empty(0, dtype=np.int64)
+    members = [set(point_groups.get(component, empty)) for component in range(n_components)]
+    del point_groups
     active = np.asarray(seed_edge_counts > int(min_edges), dtype=bool)
     adjacency = [[] for _ in range(n_points)]
     for edge_index, (u, v) in enumerate(edge_keys):
@@ -1973,6 +1975,10 @@ def _sequential_growth(edge_keys: np.ndarray, lengths: np.ndarray,
         internal_reference = initial_mask | accepted | reference_restored
         reference_u = point_roots[edge_keys[:, 0]]
         reference_v = point_roots[edge_keys[:, 1]]
+        # Merges happen after the round: regroup using this round's frozen roots.
+        internal_groups = _group_indices_by_label(
+            reference_u, np.flatnonzero(reference_u == reference_v),
+        )
         for root in range(n_components):
             if find(root) != root or not active[root] or not members[root]:
                 continue
@@ -1984,11 +1990,8 @@ def _sequential_growth(edge_keys: np.ndarray, lengths: np.ndarray,
             # tested and can make separate seed components merge immediately.
             # At round zero this is precisely the seed graph; thereafter it
             # also includes edges accepted in prior complete rounds.
-            reference_indices = np.flatnonzero(
-                internal_reference
-                & (reference_u == root)
-                & (reference_v == root)
-            )
+            internal_indices = internal_groups.get(root, empty)
+            reference_indices = internal_indices[internal_reference[internal_indices]]
             if not len(reference_indices):
                 # Active components are seeded by edges, so this should only
                 # be reachable for a malformed input.  Skipping is safer than
@@ -2015,12 +2018,10 @@ def _sequential_growth(edge_keys: np.ndarray, lengths: np.ndarray,
                 restore_threshold = float(
                     median + restore_hard_limit * max(float(q75 - q25), 1e-12)
                 )
-                restorable = np.flatnonzero(
-                    ~internal_reference
-                    & (reference_u == root)
-                    & (reference_v == root)
-                    & (lengths <= restore_threshold)
-                )
+                restorable = internal_indices[
+                    ~internal_reference[internal_indices]
+                    & (lengths[internal_indices] <= restore_threshold)
+                ]
                 qualifying_restorations.update(map(int, restorable))
 
             incident = set()
@@ -2159,10 +2160,14 @@ def _bounded_intra_component_restore_mask(
         return same_completed
 
     restored = np.zeros(len(edge_keys), dtype=bool)
+    edge_groups = _group_indices_by_label(
+        completed_labels[u], np.flatnonzero(same_completed),
+    )
+    empty = np.empty(0, dtype=np.int64)
     for component in np.unique(completed_labels[completed_points]):
-        in_component = same_completed & (completed_labels[u] == component)
-        reference = initial_mask & in_component
-        if not np.any(reference):
+        in_component = edge_groups.get(int(component), empty)
+        reference = in_component[initial_mask[in_component]]
+        if not len(reference):
             continue
         q25, median, q75 = np.percentile(lengths[reference], [25.0, 50.0, 75.0])
         threshold = float(median + restore_hard_limit * max(q75 - q25, 1e-12))

@@ -26,6 +26,31 @@ except ImportError:  # script/test import
     from utils_pruning import get_triangles_with_edges, _extract_edge_data
 
 
+def _group_indices_by_label(
+    labels: np.ndarray, indices: np.ndarray | None = None,
+) -> dict[int, np.ndarray]:
+    """Group indices by label, retaining their input order within each group.
+
+    Passing ascending indices reproduces ``flatnonzero(labels == label)``
+    order. Callers must rebuild groups when labels or membership change.
+    """
+    if indices is None:
+        indices = np.arange(len(labels), dtype=np.int64)
+    if not len(indices):
+        return {}
+    selected_labels = labels[indices]
+    order = np.argsort(selected_labels, kind="stable")
+    sorted_labels = selected_labels[order]
+    boundaries = np.flatnonzero(sorted_labels[1:] != sorted_labels[:-1]) + 1
+    starts = np.r_[0, boundaries]
+    ends = np.r_[boundaries, len(order)]
+    grouped = indices[order]
+    return {
+        int(sorted_labels[start]): grouped[start:end]
+        for start, end in zip(starts, ends)
+    }
+
+
 def _percentile_stats(values: np.ndarray) -> dict[str, float]:
     values = np.asarray(values, dtype=float)
     q25, median, q75 = np.percentile(values, [25.0, 50.0, 75.0])
@@ -1439,12 +1464,13 @@ def _assign_anomalies_cost_gate(
         np.where(counts > 0, sums / np.maximum(counts, 1), global_median), 1e-12,
     )
 
+    point_groups = _group_indices_by_label(labels, np.flatnonzero(labels >= 0))
     if use_density:
         core_distance = np.asarray(core_distance, dtype=np.float64)
         global_core = float(np.median(core_distance)) if len(core_distance) else 1.0
         density_reference = np.full(n_clusters, global_core, dtype=np.float64)
-        for cluster in range(n_clusters):
-            values = core_distance[labels == cluster]
+        for cluster, nodes in point_groups.items():
+            values = core_distance[nodes]
             if len(values):
                 density_reference[cluster] = float(np.median(values))
         density_reference = np.maximum(density_reference, 1e-12)
@@ -1462,8 +1488,8 @@ def _assign_anomalies_cost_gate(
     owner = labels.copy()
     exponent = 1.0 + float(penalty_power)
     heap: list[tuple[float, int, int, int]] = []
-    for cluster in range(n_clusters):
-        for node in np.flatnonzero(labels == cluster):
+    for cluster, nodes in point_groups.items():
+        for node in nodes:
             for neighbour, edge_index in adjacency[int(node)]:
                 if labels[neighbour] != cluster:
                     cost = relative(edge_index, neighbour, cluster) ** exponent
