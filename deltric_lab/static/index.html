@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DelTriC · Reassignment Lab</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <button
+        class="iconbutton"
+        id="toggle-sidebar"
+        title="Toggle datasets"
+        aria-label="Toggle datasets"
+      >
+        ☰
+      </button>
+      <a class="brand" href="/" aria-label="DelTriC Lab home"
+        ><svg viewBox="0 0 36 36" aria-hidden="true">
+          <path d="M8 26 18 7 29 26 8 26 25 16 18 7M8 26 17 21 29 26" />
+          <circle cx="18" cy="7" r="3" />
+          <circle cx="8" cy="26" r="3" />
+          <circle cx="29" cy="26" r="3" />
+          <circle cx="17" cy="21" r="2.5" />
+          <circle cx="25" cy="16" r="2.5" /></svg
+        ><span
+          >DelTriC <span class="brand-sub">/ Reassignment lab</span></span
+        ></a
+      >
+      <span class="local-tag"
+        ><span class="live-dot"></span> LOCAL WORKSPACE</span
+      >
+      <div class="header-actions">
+        <button id="help">How to explore</button
+        ><button id="export">Export evidence ↗</button
+        ><button
+          class="iconbutton"
+          id="toggle-inspector"
+          title="Toggle inspector"
+          aria-label="Toggle inspector"
+        >
+          ◫
+        </button>
+      </div>
+    </header>
+    <main class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-heading">
+          <div class="eyebrow">YOUR DATA</div>
+          <h2>Datasets <span id="dataset-total"></span></h2>
+        </div>
+        <label class="search"
+          ><span>⌕</span
+          ><input
+            id="search"
+            type="search"
+            placeholder="Find a dataset…"
+            aria-label="Find a dataset"
+        /></label>
+        <div class="filter-row">
+          <select id="dataset-filter" aria-label="Dataset filter">
+            <option value="ready">Recorded cases</option>
+            <option value="gaia">Gaia</option>
+            <option value="all">All development data</option>
+            <option value="harm">F1 regressions</option>
+            <option value="clean">Normal examples</option></select
+          ><select id="sort" aria-label="Dataset sorting">
+            <option value="gaia">Gaia first</option>
+            <option value="f1">Worst Δ F1</option>
+            <option value="f1-best">Best Δ F1</option>
+            <option value="name">Name</option>
+            <option value="size">Smallest</option>
+          </select>
+        </div>
+        <div id="dataset-list" class="dataset-list"></div>
+        <div class="sidebar-footer">
+          <span class="live-dot"></span>
+          <div>
+            Everything stays on your laptop.<small
+              >Cases · experiments · notes · views</small
+            >
+          </div>
+        </div>
+      </aside>
+      <section class="workspace">
+        <div class="workspace-heading">
+          <div>
+            <div class="eyebrow">ANOMALY REASSIGNMENT / INVESTIGATE</div>
+            <h1 id="case-title">Open a dataset</h1>
+            <div id="case-subtitle" class="subtitle">
+              Follow the evidence, one claim at a time.
+            </div>
+          </div>
+          <button
+            id="rerun"
+            title="Run current DelTriC defaults and record a fresh case"
+          >
+            ↻ Record fresh case
+          </button>
+        </div>
+        <div id="stale-banner" class="notice hidden"></div>
+        <div class="metric-strip" id="metrics"></div>
+        <div class="work-tabs">
+          <button class="active" data-tab="explore">Explore</button
+          ><button data-tab="costs">Cost anatomy</button
+          ><button data-tab="experiments">
+            Experiments <span id="experiment-count">0</span></button
+          ><button data-tab="notes">
+            Notebook <span id="note-count">0</span>
+          </button>
+          <div class="work-tabs-right" id="run-badge">Recorded default</div>
+        </div>
+        <section id="tab-explore" class="tab-content active">
+          <div class="plot-toolbar">
+            <div class="toolbar-group">
+              <label for="projection">View</label
+              ><select id="projection">
+                <option value="graph">Graph projection</option>
+                <option value="pca">PCA</option>
+              </select>
+            </div>
+            <div class="toolbar-group layout-switch">
+              <button id="single" class="active" title="One large plot">
+                ▣ Single</button
+              ><button id="split" title="Two plots">◫ Split</button>
+            </div>
+            <label class="check small"
+              ><input id="linked" type="checkbox" checked /> Linked views</label
+            >
+            <div class="toolbar-spacer"></div>
+            <button id="zoom-out" title="Zoom out">−</button
+            ><button id="zoom-in" title="Zoom in">+</button
+            ><button id="fit">Fit all</button
+            ><button id="focus">Focus selection</button
+            ><button
+              id="canvas-focus"
+              title="Give the graph the whole workspace"
+            >
+              ⛶ Focus mode</button
+            ><button id="png" title="Download the large plot as PNG">
+              ↓ PNG
+            </button>
+          </div>
+          <div class="layer-toolbar">
+            <span class="eyebrow">LAYERS</span
+            ><label class="check"
+              ><input type="checkbox" id="graph" />Graph edges</label
+            ><label class="check"
+              title="Directed winning claim edges for each plot's view. Before reassignment and ground truth have no claims."
+              ><input type="checkbox" id="tree" />Claim paths</label
+            ><label class="check"
+              ><input type="checkbox" id="frontier" checked /> Frontier</label
+            ><label class="check"
+              ><input type="checkbox" id="harm" checked /> Changed points</label
+            ><label class="check"
+              ><input type="checkbox" id="paths" checked /> Selected path</label
+            >
+            <select id="point-filter" aria-label="Point filter">
+              <option value="all">All points</option>
+              <option value="anomalies">True anomalies</option>
+              <option value="absorbed">Absorbed anomalies</option>
+              <option value="unassigned">Unassigned now</option>
+              <option value="changed">Claimed so far</option>
+              <option value="normals">True normals</option>
+              <option value="normal-match">Normal claims · majority match</option>
+              <option value="normal-mismatch">Normal claims · mismatch</option>
+            </select>
+          </div>
+          <div class="cluster-tools">
+            <label
+              >Inspect a source cluster
+              <select id="cluster-focus" aria-label="Source cluster focus">
+                <option value="all">All source clusters</option>
+              </select></label
+            ><span id="cluster-summary"
+              >Select a cluster to focus its sources and claimed points.</span
+            >
+          </div>
+          <div class="plot-grid" id="plot-grid">
+            <div class="plot-panel" id="panel-a">
+              <div class="plot-caption">
+                <select id="view-a" aria-label="Left plot labels">
+                  <option value="current">Current frame</option>
+                  <option value="before">Before reassignment</option>
+                  <option value="truth">Ground truth</option>
+                  <option value="default">Recorded default</option>
+                  <option value="final">Active run final</option></select
+                ><span class="plot-stage" id="stage-a"></span
+                ><select id="color-a" aria-label="Left plot coloring">
+                  <option value="cluster">Cluster colors</option>
+                  <option value="outcome">Anomaly outcomes</option>
+                  <option value="truth">Truth colors</option>
+                </select>
+              </div>
+              <canvas
+                id="canvas-a"
+                aria-label="Interactive point cloud. Scroll to zoom; drag to pan; click a point to inspect; shift-drag to select a region."
+              ></canvas>
+              <div class="canvas-tip">
+                Scroll to zoom · drag to pan · click to inspect · shift-drag to
+                select
+              </div>
+              <div class="axis-label">
+                Graph topology projection · costs in original standardized
+                features
+              </div>
+            </div>
+            <div class="plot-panel hidden" id="panel-b">
+              <div class="plot-caption">
+                <select id="view-b" aria-label="Right plot labels">
+                  <option value="truth">Ground truth</option>
+                  <option value="current">Current frame</option>
+                  <option value="before">Before reassignment</option>
+                  <option value="default">Recorded default</option>
+                  <option value="final">Active run final</option></select
+                ><span class="plot-stage" id="stage-b"></span
+                ><select id="color-b" aria-label="Right plot coloring">
+                  <option value="cluster">Cluster colors</option>
+                  <option value="outcome">Anomaly outcomes</option>
+                  <option value="truth">Truth colors</option>
+                </select>
+              </div>
+              <canvas
+                id="canvas-b"
+                aria-label="Comparison point cloud"
+              ></canvas>
+              <div class="canvas-tip">
+                Selection and zoom are linked when enabled
+              </div>
+              <div class="axis-label">
+                Truth and cluster IDs have independent colors
+              </div>
+            </div>
+          </div>
+          <div class="plot-legend" id="legend">
+            <span><i style="background: #b1bac6"></i> Unassigned</span
+            ><span
+              ><i class="ring" style="border-color: #189475"></i> Normal
+              claimed</span
+            ><span><i class="cross">×</i> Anomaly absorbed</span
+            ><span
+              ><i class="ring" style="border-color: #d6a23a"></i> Eligible
+              frontier</span
+            ><span id="selection-summary" class="selection-summary"></span>
+          </div>
+          <div class="playback">
+            <div class="playback-header">
+              <div>
+                <span class="eyebrow">REPLAY</span
+                ><strong id="frame-label">No case loaded</strong>
+              </div>
+              <div class="playback-actions">
+                <select id="pipeline-mode" aria-label="Replay scope">
+                  <option value="reassignment">Reassignment</option>
+                  <option value="full">Full pipeline</option></select
+                ><button id="first-harm">First harm ↗</button
+                ><button
+                  id="normal-claim"
+                  title="Next normal point claimed by a cluster whose fixed sources share its truth label"
+                >
+                  Normal claim ↗</button
+                ><select id="speed" aria-label="Playback speed">
+                  <option value="1">1 claim / step</option>
+                  <option value="5" selected>5 claims / step</option>
+                  <option value="20">20 claims / step</option>
+                  <option value="100">100 claims / step</option>
+                </select>
+              </div>
+            </div>
+            <div class="transport">
+              <button id="start" title="Before reassignment or first stage">
+                |◀</button
+              ><button id="prev" title="Previous claim">‹</button
+              ><button id="play" class="play-button" aria-label="Play replay">
+                ▶</button
+              ><button id="next" title="Next claim">›</button
+              ><input
+                id="timeline"
+                aria-label="Replay timeline"
+                type="range"
+                min="0"
+                max="1"
+                value="0"
+              /><button id="end" title="Final result">▶|</button>
+            </div>
+            <div class="quality-wrap">
+              <canvas
+                id="quality"
+                aria-label="Quality across claim order"
+              ></canvas
+              ><span class="quality-caption"
+                >Quality over claims · ARI lines sampled · cards exact at
+                visible frame</span
+              >
+            </div>
+          </div>
+        </section>
+        <section id="tab-costs" class="tab-content">
+          <div class="section-intro">
+            <h2>What makes a claim cheap?</h2>
+            <p>
+              Compare successful normal and true-anomaly claims in the active
+              run. These charts cover the complete run; click a ratio point to
+              inspect its claim.
+            </p>
+          </div>
+          <div class="anatomy-grid">
+            <div class="anatomy-panel">
+              <h3>Winning cumulative cost</h3>
+              <p>Do normal and anomaly costs separate?</p>
+              <canvas
+                id="cost-histogram"
+                aria-label="Winning cost distributions"
+              ></canvas>
+            </div>
+            <div class="anatomy-panel">
+              <h3>Incoming hop: scale × density</h3>
+              <p>Ratios use each fixed source cluster’s references.</p>
+              <canvas
+                id="cost-ratios"
+                aria-label="Incoming edge and density ratios, click a point to inspect"
+              ></canvas>
+            </div>
+          </div>
+          <div class="anatomy-legend">
+            <span style="color: #16836c">● Normal claimed</span
+            ><span style="color: #d65b63">● True anomaly claimed</span>
+          </div>
+          <div class="table-heading">
+            <h3>Where do the claims go?</h3>
+            <span class="subtitle"
+              >Source contamination already exists before reassignment.</span
+            >
+          </div>
+          <div id="cluster-cost-table" class="table-scroll"></div>
+          <div class="notice">
+            Successful claims alone cannot explain why a point stayed
+            unassigned. Select that point in Explore to inspect recorded
+            over-budget attempts and candidate routes.
+          </div>
+        </section>
+        <section id="tab-experiments" class="tab-content">
+          <div class="section-intro">
+            <h2>Ask “what if?”</h2>
+            <p>
+              Replay reassignment on the same graph and source clusters. Every
+              run is saved, with its settings and evidence.
+            </p>
+          </div>
+          <form id="experiment-form" class="experiment-form">
+            <label
+              >Experiment name<input
+                id="experiment-name"
+                placeholder="e.g. Protect sparse Gaia field stars" /></label
+            ><label
+              >Reach budget<input
+                type="number"
+                id="reach"
+                min="0"
+                max="10000"
+                step="any"
+                value="15"
+                required /></label
+            ><label
+              >Penalty power<input
+                type="number"
+                id="penalty"
+                min="0"
+                max="10000"
+                step="any"
+                value="0.5"
+                required /></label
+            ><label
+              >Density power<input
+                type="number"
+                id="density"
+                min="0"
+                max="10000"
+                step="any"
+                value="0.5"
+                required /></label
+            ><label class="check floor"
+              ><input type="checkbox" id="density-clip" /> Floor density ratio
+              at 1
+              <span
+                title="Use the production gate's density_clip variant: dense destinations cannot reduce hop cost through a density ratio below 1."
+                >ⓘ</span
+              ></label
+            ><button class="primary" type="submit">
+              Run & save experiment →
+            </button>
+          </form>
+          <div class="formula">
+            <span class="eyebrow">COST MODEL</span
+            ><code
+              >hop = (edge length / cluster mean edge × density
+              ratio<sup>density</sup>)<sup>1 + penalty</sup></code
+            >
+            <p>
+              Costs add along the path. A point is permanently owned by the
+              first accepted queue proposal. Ground truth is used for evaluation
+              only.
+            </p>
+          </div>
+          <div class="sweep-row">
+            <div>
+              <strong>Explore a reach sweep</strong>
+              <p>Hold penalty and density above fixed. Up to 12 saved runs.</p>
+            </div>
+            <input
+              id="sweep-values"
+              value="1, 3, 5, 10, 15, 25"
+              aria-label="Reach sweep values"
+            /><button id="sweep">Run sweep</button>
+          </div>
+          <div class="table-heading">
+            <h3>Experiment history</h3>
+            <button id="restore-default">Restore recorded default</button>
+          </div>
+          <div id="experiment-history" class="table-scroll"></div>
+        </section>
+        <section id="tab-notes" class="tab-content">
+          <div class="section-intro">
+            <h2>Your investigation notebook</h2>
+            <p>
+              Keep observations beside the dataset. Notes remember the run,
+              point, and replay frame so you can return to the evidence.
+            </p>
+          </div>
+          <form id="note-form">
+            <div id="note-context" class="context-pill"></div>
+            <textarea
+              id="note-text"
+              rows="5"
+              placeholder="What do you notice? What would you try next?"
+              required
+            ></textarea>
+            <div class="note-form-actions">
+              <span>Saved locally in deltric_lab/data/notes/</span
+              ><button class="primary" type="submit">Save observation</button>
+            </div>
+          </form>
+          <div id="notes-list"></div>
+        </section>
+        <footer class="workspace-footer">
+          <span id="status">Loading workspace…</span
+          ><span id="save-state">Workspace saved locally</span>
+        </footer>
+      </section>
+      <aside id="inspector" class="inspector">
+        <div class="inspector-top">
+          <div class="eyebrow">FOLLOW THE EVIDENCE</div>
+          <h2>Point inspector</h2>
+          <div class="point-search">
+            <input
+              id="point-id"
+              type="number"
+              min="0"
+              placeholder="Point ID"
+              aria-label="Point ID"
+            /><button id="find-point">Find →</button>
+          </div>
+        </div>
+        <div id="inspector-body" class="inspector-body">
+          <div class="empty-inspector">
+            <div class="empty-orbit">◎</div>
+            <h3>Start with a point</h3>
+            <p>
+              Click an absorbed anomaly, an unassigned point, or any place that
+              makes you curious.
+            </p>
+            <p>
+              Its winning path, hop costs, and competing proposals will appear
+              here.
+            </p>
+            <button id="inspect-first-harm">
+              Inspect first absorbed anomaly →
+            </button>
+            <button id="inspect-normal-claim">Inspect a normal claim →</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+    <div id="tooltip" class="tooltip hidden"></div>
+    <div id="toast" class="toast hidden" role="status"></div>
+    <dialog id="help-dialog">
+      <div class="dialog-heading">
+        <div>
+          <div class="eyebrow">A QUICK FIELD GUIDE</div>
+          <h2>From a GIF to an explanation</h2>
+        </div>
+        <button id="close-help" aria-label="Close help">✕</button>
+      </div>
+      <ol class="guide">
+        <li>
+          <strong>Choose a Gaia case.</strong> Open a recorded case or search
+          all development data and record a fresh run.
+        </li>
+        <li>
+          <strong>Find a change.</strong> Play the claims, jump to the first
+          absorbed anomaly, or step through normal claims that match their
+          destination's majority label. Split the canvas to compare ground
+          truth.
+        </li>
+        <li>
+          <strong>Follow the winning path.</strong> Click a point. See each
+          edge’s original-space cost and the cumulative reach used.
+        </li>
+        <li>
+          <strong>Check the competition.</strong> Queue attempts distinguish
+          accepted ownership, skipped ownership, and over-budget hops. Future
+          evidence is marked.
+        </li>
+        <li>
+          <strong>Try an idea.</strong> Save a parameter experiment or reach
+          sweep. Compare with the recorded default and keep observations in the
+          notebook.
+        </li>
+      </ol>
+      <div class="notice">
+        “Normal claimed” does not prove correct cluster assignment. Projected
+        distances do not determine costs. Earlier pipeline frames show
+        reconstructed memberships; the queue inspector concerns reassignment.
+      </div>
+      <p class="shortcut-guide">
+        <kbd>Space</kbd> play / pause · <kbd>←</kbd><kbd>→</kbd> step ·
+        <kbd>F</kbd> fit · <kbd>S</kbd> split · <kbd>Esc</kbd> clear selection
+      </p>
+    </dialog>
+    <script src="/app.js"></script>
+  </body>
+</html>

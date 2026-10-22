@@ -1,0 +1,20 @@
+{
+  "name": "Glass",
+  "stem": "odds_glass",
+  "split": "testing",
+  "path": "data/testing/additional_anomaly/odds_glass.npz",
+  "source_path": "data/testing/additional_anomaly/source/odds_glass.mat",
+  "source_url": "https://www.dropbox.com/scl/fi/1wx51lp2gvxwm1b/glass.mat?rlkey=adv2psvxj0truykcdvaju9yzz&dl=1",
+  "documentation": "https://shebuti.com/glass-dataset/",
+  "source_commit": null,
+  "n": 214,
+  "d": 9,
+  "n_anomaly": 9,
+  "contamination": 0.04205607476635514,
+  "duplicate_feature_rows": 1,
+  "constant_feature_columns": 0,
+  "finite_features": true,
+  "sha256": "cb2e42897d66d381e418e566acedda6a05cdd6d9e1697792a45deed6406ded76",
+  "source_sha256": "2c506e6e1e2ca1e82a905d10a90773151ff812c4bd969c71a12db5b2bb6e7921",
+  "split_reason": "Nine-feature ODDS version; small minority-class diagnostic, only nine positives."
+}

@@ -1,0 +1,38 @@
+{
+  "name": "sdss_colors",
+  "split": "holdout",
+  "path": "data/holdout/real_world/sdss_colors.npz",
+  "n": 12632,
+  "d": 5,
+  "k_clusters": 2,
+  "clusters": [
+    "GALAXY",
+    "STAR"
+  ],
+  "anomaly_classes": [
+    "QSO"
+  ],
+  "n_anomaly": 632,
+  "contamination": 0.050031665611146296,
+  "duplicate_feature_rows": 0,
+  "label_encoding": {
+    "y": "-1 anomaly, 0..k-1 cluster (ordered by size)",
+    "source_y": "original class label"
+  },
+  "preprocessing": "Published features, no scaling; evaluator standardizes per dataset.",
+  "source": "https://skyserver.sdss.org/dr18/SkyServerWS/SearchTools/SqlSearch",
+  "sql_where": "s.zWarning = 0 AND p.clean = 1 AND p.psfMag_r BETWEEN 15 AND 19.5",
+  "documentation": "https://www.sdss4.org/dr17/ ; SkyServer DR18 SqlSearch",
+  "citation": "SDSS DR18, Almeida et al. (2023), ApJS 267:44",
+  "features": [
+    "u-g",
+    "g-r",
+    "r-i",
+    "i-z",
+    "psf_minus_model_r"
+  ],
+  "anomaly_origin": "constructed",
+  "construction": "Spectroscopic classes STAR and GALAXY (first 6000 each by specobjid, i.e. earliest SDSS-I/II plates; clean photometry, 15<r_psf<19.5) are clusters; QSOs downsampled to 5% (seed=0) are anomalies. Colours + concentration only; redshift deliberately excluded (it would make QSOs trivial).",
+  "sha256": "22f803f801aeec4d16a21702743a084aa54b0f8ef924e85210c2f0139adad9dd",
+  "source_sha256": "8f22df503f30d3cd3d7253291ec43c7c45166c99abbb5ede42b2994ef80539f4"
+}

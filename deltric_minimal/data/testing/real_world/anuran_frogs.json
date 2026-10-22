@@ -1,0 +1,61 @@
+{
+  "name": "anuran_frogs",
+  "split": "testing",
+  "path": "data/testing/real_world/anuran_frogs.npz",
+  "n": 7195,
+  "d": 22,
+  "k_clusters": 7,
+  "clusters": [
+    "AdenomeraHylaedactylus",
+    "HypsiboasCordobae",
+    "AdenomeraAndre",
+    "Ameeregatrivittata",
+    "HypsiboasCinerascens",
+    "HylaMinuta",
+    "LeptodactylusFuscus"
+  ],
+  "anomaly_classes": [
+    "OsteocephalusOophagus",
+    "Rhinellagranulosa",
+    "ScinaxRuber"
+  ],
+  "n_anomaly": 330,
+  "contamination": 0.04586518415566365,
+  "duplicate_feature_rows": 0,
+  "label_encoding": {
+    "y": "-1 anomaly, 0..k-1 cluster (ordered by size)",
+    "source_y": "original class label"
+  },
+  "preprocessing": "Published features, no scaling; evaluator standardizes per dataset.",
+  "source": "https://archive.ics.uci.edu/static/public/406/anuran+calls+mfccs.zip",
+  "documentation": "https://doi.org/10.24432/C5CC9H",
+  "citation": "Colonna et al. (2016), Anuran Calls (MFCCs), UCI",
+  "features": [
+    "MFCCs_ 1",
+    "MFCCs_ 2",
+    "MFCCs_ 3",
+    "MFCCs_ 4",
+    "MFCCs_ 5",
+    "MFCCs_ 6",
+    "MFCCs_ 7",
+    "MFCCs_ 8",
+    "MFCCs_ 9",
+    "MFCCs_10",
+    "MFCCs_11",
+    "MFCCs_12",
+    "MFCCs_13",
+    "MFCCs_14",
+    "MFCCs_15",
+    "MFCCs_16",
+    "MFCCs_17",
+    "MFCCs_18",
+    "MFCCs_19",
+    "MFCCs_20",
+    "MFCCs_21",
+    "MFCCs_22"
+  ],
+  "anomaly_origin": "natural_rare_class",
+  "construction": "Seven species with >=270 syllables are clusters; the three rarest species (330 syllables, 4.6%, three different genera) are anomalies at natural frequency. Several syllables per recording (RecordID not used).",
+  "sha256": "29947a306db9841f77068d454e9480d49a00e375dabe7c007442c87d8b996429",
+  "source_sha256": "f440702d581b8d7edf2cd7ed336abe3211fc686792eef3b2665a6f3008bbbc81"
+}

@@ -1,0 +1,63 @@
+{
+  "name": "gaia_orion",
+  "split": "holdout",
+  "path": "data/holdout/real_world/gaia_orion.npz",
+  "n": 20000,
+  "d": 5,
+  "k_clusters": 13,
+  "clusters": [
+    "Theia_13",
+    "ASCC_20",
+    "Sigma_Orionis",
+    "Briceno_1",
+    "OCSN_61",
+    "ASCC_21",
+    "UBC_17a",
+    "NGC_2068",
+    "ASCC_18",
+    "Theia_139",
+    "ASCC_19",
+    "HSC_1633",
+    "OCSN_65"
+  ],
+  "anomaly_classes": [
+    "field"
+  ],
+  "n_anomaly": 18637,
+  "contamination": 0.93185,
+  "duplicate_feature_rows": 0,
+  "label_encoding": {
+    "y": "-1 anomaly, 0..k-1 cluster (ordered by size)",
+    "source_y": "original class label"
+  },
+  "preprocessing": "Published features, no scaling; evaluator standardizes per dataset.",
+  "source": "Gaia DR3 archive TAP (gaiadr3.gaia_source) + VizieR J/A+A/673/A114/members",
+  "gaia_box": {
+    "ra": [
+      78,
+      88
+    ],
+    "dec": [
+      -5,
+      4
+    ],
+    "parallax_mas": [
+      2,
+      3.2
+    ],
+    "quality": "parallax_over_error > 5 AND ruwe < 1.4 AND phot_g_mean_mag < 18"
+  },
+  "documentation": "https://doi.org/10.1051/0004-6361/202346285 ; https://gea.esac.esa.int/archive/",
+  "citation": "Gaia Collaboration (2023), A&A 674:A1; Hunt & Reffert (2023), A&A 673:A114",
+  "features": [
+    "ra",
+    "dec",
+    "parallax",
+    "pmra",
+    "pmdec"
+  ],
+  "anomaly_origin": "natural",
+  "construction": "Every Gaia DR3 star in the box passing the quality cuts. Stars that are Hunt & Reffert (2023) members with Prob>=0.5 of a cluster with >=50 such members in the box are clusters; all other stars are field (= anomaly / background, label 'field'). 186 stars of smaller clusters or with lower membership probability were dropped. Field subsampled uniformly to 96.3% of 19355 (seed=0) to fit n<=20000; the field's shape is unchanged. Contamination is high by nature: this is 'clusters in a real background', not rare-point detection. 5D astrometry only; photometry excluded.",
+  "sha256": "4ecc3ba69cd6659bf5b3363776e5897c596d321c8cd098f78ab5e4d3613d6d23",
+  "source_sha256": "2d0c93d6d4d30aabf8fb2d638560f2064c71aec09928764401fa8a64c903583d"
+}

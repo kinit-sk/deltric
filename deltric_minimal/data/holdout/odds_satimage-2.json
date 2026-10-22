@@ -1,0 +1,15 @@
+{
+  "dataset": "satimage-2",
+  "split": "holdout",
+  "source": "https://www.dropbox.com/scl/fi/s4uymhnzj1ec1hu/satimage-2.mat?rlkey=f40h6so1cy2njmvz3nuu57vhy&dl=1",
+  "documentation": "https://shebuti.com/satimage-2-dataset/",
+  "source_sha256": "95c37a07cea2cb201f6900d14f521510e10b6b2f0074c06ac46d3157440ec67b",
+  "n": 5803,
+  "d": 36,
+  "n_anomaly": 71,
+  "label_encoding": {
+    "y": "-1 anomaly, 0 inlier",
+    "y_odds": "1 anomaly, 0 inlier"
+  },
+  "preprocessing": "No scaling or deduplication in stored data; evaluator standardizes features."
+}

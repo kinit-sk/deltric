@@ -1,0 +1,18 @@
+{
+  "dataset": "wilt",
+  "split": "holdout",
+  "source": "https://raw.githubusercontent.com/Minqi824/ADBench/3dac8221081e190f157d78e93bfa8867f90d0965/adbench/datasets/Classical/44_Wilt.npz",
+  "documentation": "https://github.com/Minqi824/ADBench#datasets",
+  "source_commit": "3dac8221081e190f157d78e93bfa8867f90d0965",
+  "source_sha256": "c70b72aa611ec87b20efb400943ef3ce4f8bf7aa58fcef825fbd28cc5cee3cc9",
+  "n": 4819,
+  "d": 5,
+  "n_anomaly": 257,
+  "label_encoding": {
+    "y": "-1 anomaly, 0 inlier",
+    "y_adbench": "1 anomaly, 0 inlier"
+  },
+  "preprocessing": "Published ADBench features preserved without additional scaling or deduplication; standardize in evaluator.",
+  "split_unit": "Whole dataset; no row partitioning.",
+  "allocation": "Two of four new numerical datasets assigned to test and two to holdout, before evaluation."
+}

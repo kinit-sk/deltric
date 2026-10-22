@@ -1,0 +1,20 @@
+{
+  "name": "Stamps",
+  "stem": "adbench_stamps",
+  "split": "holdout",
+  "path": "data/holdout/additional_anomaly/adbench_stamps.npz",
+  "source_path": "data/holdout/additional_anomaly/source/adbench_stamps.npz",
+  "source_url": "https://raw.githubusercontent.com/Minqi824/ADBench/3dac8221081e190f157d78e93bfa8867f90d0965/adbench/datasets/Classical/37_Stamps.npz",
+  "documentation": "https://www.dbs.ifi.lmu.de/research/outlier-evaluation/DAMI/semantic/Stamps/",
+  "source_commit": "3dac8221081e190f157d78e93bfa8867f90d0965",
+  "n": 340,
+  "d": 9,
+  "n_anomaly": 31,
+  "contamination": 0.09117647058823529,
+  "duplicate_feature_rows": 0,
+  "constant_feature_columns": 0,
+  "finite_features": true,
+  "sha256": "d802c41f7d06b935c08e8727e4db1de1b0b29592cdfa1d0855f4388ce495d979",
+  "source_sha256": "99fe739447284f613fa54bf2dccdb51c5120175ce6260adec6dad77576c42509",
+  "split_reason": "Domain-defined forgery target; numeric features and modest dimension."
+}

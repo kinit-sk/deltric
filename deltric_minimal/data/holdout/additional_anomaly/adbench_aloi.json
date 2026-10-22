@@ -1,0 +1,20 @@
+{
+  "name": "ALOI",
+  "stem": "adbench_aloi",
+  "split": "holdout",
+  "path": "data/holdout/additional_anomaly/adbench_aloi.npz",
+  "source_path": "data/holdout/additional_anomaly/source/adbench_aloi.npz",
+  "source_url": "https://raw.githubusercontent.com/Minqi824/ADBench/3dac8221081e190f157d78e93bfa8867f90d0965/adbench/datasets/Classical/1_ALOI.npz",
+  "documentation": "https://www.dbs.ifi.lmu.de/research/outlier-evaluation/DAMI/literature/ALOI/",
+  "source_commit": "3dac8221081e190f157d78e93bfa8867f90d0965",
+  "n": 49534,
+  "d": 27,
+  "n_anomaly": 1508,
+  "contamination": 0.030443735615940565,
+  "duplicate_feature_rows": 0,
+  "constant_feature_columns": 0,
+  "finite_features": true,
+  "sha256": "cefd817c7ba6966c0bb10224b324a2449aba73d912f7e8534fedb563a1adbbc6",
+  "source_sha256": "792d0b5bd1147bfc9574a1974f157b39fbd4cbed8ecd04cf983fd554498ed477",
+  "split_reason": "Duplicate-free numerical image histograms; larger-scale generalization test."
+}

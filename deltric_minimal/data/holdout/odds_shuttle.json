@@ -1,0 +1,15 @@
+{
+  "dataset": "shuttle",
+  "split": "holdout",
+  "source": "https://www.dropbox.com/scl/fi/q9tbvnikl6ml6wq/shuttle.mat?rlkey=3yjz7k5xxqwltilphur4hxfeh&dl=1",
+  "documentation": "https://shebuti.com/shuttle-dataset/",
+  "source_sha256": "b6e396c92354d5dcf5036901e36dc58e2913f2d1a5e138c35a2bedf9c69db899",
+  "n": 49097,
+  "d": 9,
+  "n_anomaly": 3511,
+  "label_encoding": {
+    "y": "-1 anomaly, 0 inlier",
+    "y_odds": "1 anomaly, 0 inlier"
+  },
+  "preprocessing": "No scaling or deduplication in stored data; evaluator standardizes features."
+}

@@ -1,0 +1,39 @@
+{
+  "name": "htru2",
+  "split": "holdout",
+  "path": "data/holdout/real_world/htru2.npz",
+  "n": 17898,
+  "d": 8,
+  "k_clusters": 1,
+  "clusters": [
+    "rfi_noise"
+  ],
+  "anomaly_classes": [
+    "pulsar"
+  ],
+  "n_anomaly": 1639,
+  "contamination": 0.09157447759526204,
+  "duplicate_feature_rows": 0,
+  "label_encoding": {
+    "y": "-1 anomaly, 0..k-1 cluster (ordered by size)",
+    "source_y": "original class label"
+  },
+  "preprocessing": "Published features, no scaling; evaluator standardizes per dataset.",
+  "source": "https://archive.ics.uci.edu/static/public/372/htru2.zip",
+  "documentation": "https://doi.org/10.24432/C5DK6R",
+  "citation": "Lyon et al. (2016), MNRAS 459(1):1104-1123",
+  "features": [
+    "ip_mean",
+    "ip_std",
+    "ip_kurtosis",
+    "ip_skew",
+    "dm_mean",
+    "dm_std",
+    "dm_kurtosis",
+    "dm_skew"
+  ],
+  "anomaly_origin": "natural",
+  "construction": "Real pulsars (1639, 9.2%) are anomalies among RFI/noise candidates. Binary labels only: one 'normal' label, so cluster ARI is not meaningful.",
+  "sha256": "f37c3fad905b1cd774c56d78c3c07ed06a6b5f15d48acac0db2aaf3be86a594a",
+  "source_sha256": "ba442c076dd22a8952700f26e38499fc1806037dcf7bea0e125e6bfba393f379"
+}

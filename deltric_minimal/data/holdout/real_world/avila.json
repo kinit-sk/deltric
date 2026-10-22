@@ -1,0 +1,51 @@
+{
+  "name": "avila",
+  "split": "holdout",
+  "path": "data/holdout/real_world/avila.npz",
+  "n": 10430,
+  "d": 10,
+  "k_clusters": 9,
+  "clusters": [
+    "A",
+    "F",
+    "E",
+    "I",
+    "X",
+    "H",
+    "G",
+    "D",
+    "Y"
+  ],
+  "anomaly_classes": [
+    "B",
+    "C",
+    "W"
+  ],
+  "n_anomaly": 152,
+  "contamination": 0.014573346116970278,
+  "duplicate_feature_rows": 0,
+  "label_encoding": {
+    "y": "-1 anomaly, 0..k-1 cluster (ordered by size)",
+    "source_y": "original class label"
+  },
+  "preprocessing": "Published features, no scaling; evaluator standardizes per dataset.",
+  "source": "https://archive.ics.uci.edu/static/public/459/avila.zip",
+  "documentation": "https://doi.org/10.24432/C5K02X",
+  "citation": "De Stefano et al. (2018), Eng. Appl. Artif. Intell. 72:99-110",
+  "features": [
+    "intercolumnar_distance",
+    "upper_margin",
+    "lower_margin",
+    "exploitation",
+    "row_number",
+    "modular_ratio",
+    "interlinear_spacing",
+    "weight",
+    "peak_number",
+    "modular_ratio_over_interlinear"
+  ],
+  "anomaly_origin": "natural_rare_class",
+  "construction": "Training file only (10430 rows). Nine copyists with >=266 patterns are clusters; the three rarest copyists B, W, C (152 rows, 1.5%) are anomalies at natural frequency. Hard: copyists overlap heavily.",
+  "sha256": "0c4ebbe97c8532c0d683babc52b6e873998e0a9b598a8f6cef5009555db9cdec",
+  "source_sha256": "6a7e552eb45f8766a4207a6407fcff98d25ac5482759f2ca84a871dd9f5ca202"
+}

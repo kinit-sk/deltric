@@ -1,0 +1,17 @@
+{
+  "dataset": "WDBC",
+  "source": "https://raw.githubusercontent.com/Minqi824/ADBench/3dac8221081e190f157d78e93bfa8867f90d0965/adbench/datasets/Classical/43_WDBC.npz",
+  "documentation": "https://www.dbs.ifi.lmu.de/research/outlier-evaluation/DAMI/literature/WDBC/",
+  "source_commit": "3dac8221081e190f157d78e93bfa8867f90d0965",
+  "source_sha256": "78d4606a1ab516f5b60b00c196497f3bbd6bd5e4548fd04cf5f2475209b34b85",
+  "n": 367,
+  "d": 30,
+  "n_anomaly": 10,
+  "label_encoding": {
+    "y": "-1 malignant anomaly, 0 benign inlier",
+    "y_adbench": "1 malignant anomaly, 0 benign inlier"
+  },
+  "preprocessing": "Published ADBench features preserved without additional scaling; anomaly labels mapped to repository convention.",
+  "benchmark_construction": "357 benign cases retained; malignant class downsampled to 10 cases.",
+  "duplicate_feature_rows": 0
+}

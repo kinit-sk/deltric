@@ -1,0 +1,20 @@
+{
+  "name": "Letter",
+  "stem": "adbench_letter",
+  "split": "holdout",
+  "path": "data/holdout/additional_anomaly/adbench_letter.npz",
+  "source_path": "data/holdout/additional_anomaly/source/adbench_letter.npz",
+  "source_url": "https://raw.githubusercontent.com/Minqi824/ADBench/3dac8221081e190f157d78e93bfa8867f90d0965/adbench/datasets/Classical/20_letter.npz",
+  "documentation": "https://shebuti.com/letter-recognition-dataset/",
+  "source_commit": "3dac8221081e190f157d78e93bfa8867f90d0965",
+  "n": 1600,
+  "d": 32,
+  "n_anomaly": 100,
+  "contamination": 0.0625,
+  "duplicate_feature_rows": 2,
+  "constant_feature_columns": 0,
+  "finite_features": true,
+  "sha256": "9c8ebcfa39c712f0aa9c28971336f4c1f2f3ab6f79c86e19f003d4cd50416330",
+  "source_sha256": "f986d3da80cf1fa2aea83a5ebe73b7d4800e0d4c01fdd1ae074b58d20f10d039",
+  "split_reason": "Constructed partial-feature anomalies; meaningful subspace challenge."
+}

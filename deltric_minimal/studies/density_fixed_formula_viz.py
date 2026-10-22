@@ -110,6 +110,32 @@ def numbered_anomaly_datasets(data_dir: Path) -> list[Path]:
     return out
 
 
+# stems already covered by numbered_anomaly_datasets / the numbered study set
+_ALREADY_COVERED_PREFIXES = ("01_", "02_", "04_", "10_", "11_", "14_",
+                             "text_support_tickets__")
+
+
+def rest_of_anomaly_datasets(data_dir: Path, max_n: int = 5000,
+                             max_d: int = 100) -> list[Path]:
+    """Every other ``*__anom10.npz`` with ground truth, minus the giant ones.
+
+    "Giant" = n at or above ``max_n`` (the 5k/20k-point stems) or dimension
+    above ``max_d`` -- skipped so a full sweep stays tractable.
+    """
+    out = []
+    for path in sorted(data_dir.glob("*__anom10.npz")):
+        if path.name.startswith(_ALREADY_COVERED_PREFIXES):
+            continue
+        with np.load(path, allow_pickle=False) as npz:
+            if "y" not in npz.files or not np.any(np.asarray(npz["y"]) < 0):
+                continue
+            n, d = np.asarray(npz["X"]).shape
+            if n >= max_n or d > max_d:
+                continue
+        out.append(path)
+    return out
+
+
 def frozen_graph(path: Path, cache_dir: Path, force: bool = False) -> dict:
     """cluster_tri with reassignment OFF, cached. Every variant replays on this."""
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -770,7 +796,7 @@ def main() -> None:
     parser.add_argument("--fps", type=float, default=7.0)
     args = parser.parse_args()
 
-    files = numbered_anomaly_datasets(args.data)
+    files = numbered_anomaly_datasets(args.data) + rest_of_anomaly_datasets(args.data)
     if args.datasets:
         files = [f for f in files if any(s in f.stem for s in args.datasets)]
     if not files:

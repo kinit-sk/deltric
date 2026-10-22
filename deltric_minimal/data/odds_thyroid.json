@@ -1,0 +1,15 @@
+{
+  "dataset": "thyroid",
+  "split": "test",
+  "source": "https://www.dropbox.com/scl/fi/bfwe561x2bvbbjq/thyroid.mat?rlkey=rrwjoqv9eymgyey3rmy5s5id1&dl=1",
+  "documentation": "https://shebuti.com/thyroid-disease-dataset/",
+  "source_sha256": "49155d7861b977e90808faf68343ff67a67f63090c2744d514dbb67ac68e7e33",
+  "n": 3772,
+  "d": 6,
+  "n_anomaly": 93,
+  "label_encoding": {
+    "y": "-1 anomaly, 0 inlier",
+    "y_odds": "1 anomaly, 0 inlier"
+  },
+  "preprocessing": "No scaling or deduplication in stored data; evaluator standardizes features."
+}

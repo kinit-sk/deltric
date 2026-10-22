@@ -1,0 +1,15 @@
+{
+  "dataset": "pendigits",
+  "split": "test",
+  "source": "https://www.dropbox.com/scl/fi/eoeae7scbrx5nd4/pendigits.mat?rlkey=e5jfle99kswqxeyykvtacqg4v&dl=1",
+  "documentation": "https://shebuti.com/pendigits-dataset/",
+  "source_sha256": "7bc32ac83b3d583443acea8b1342a54aaa59eaedb9996af405322f473f3c22bc",
+  "n": 6870,
+  "d": 16,
+  "n_anomaly": 156,
+  "label_encoding": {
+    "y": "-1 anomaly, 0 inlier",
+    "y_odds": "1 anomaly, 0 inlier"
+  },
+  "preprocessing": "No scaling or deduplication in stored data; evaluator standardizes features."
+}

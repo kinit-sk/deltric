@@ -1,0 +1,47 @@
+{
+  "name": "yeast",
+  "split": "holdout",
+  "path": "data/holdout/real_world/yeast.npz",
+  "n": 1484,
+  "d": 8,
+  "k_clusters": 7,
+  "clusters": [
+    "CYT",
+    "NUC",
+    "MIT",
+    "ME3",
+    "ME2",
+    "ME1",
+    "EXC"
+  ],
+  "anomaly_classes": [
+    "ERL",
+    "POX",
+    "VAC"
+  ],
+  "n_anomaly": 55,
+  "contamination": 0.03706199460916442,
+  "duplicate_feature_rows": 31,
+  "label_encoding": {
+    "y": "-1 anomaly, 0..k-1 cluster (ordered by size)",
+    "source_y": "original class label"
+  },
+  "preprocessing": "Published features, no scaling; evaluator standardizes per dataset.",
+  "source": "https://archive.ics.uci.edu/static/public/110/yeast.zip",
+  "documentation": "https://doi.org/10.24432/C5KG68",
+  "citation": "Nakai & Kanehisa (1992), Genomics 14(4):897-911",
+  "features": [
+    "mcg",
+    "gvh",
+    "alm",
+    "mit",
+    "erl",
+    "pox",
+    "vac",
+    "nuc"
+  ],
+  "anomaly_origin": "natural_rare_class",
+  "construction": "Seven localisation sites with >=35 proteins are clusters; VAC, POX, ERL (55 proteins, 3.7%) are anomalies at natural frequency. Two features (erl, pox) are near-binary.",
+  "sha256": "5f4c9519b4b8fe553d31727d2a70b549612eb99e1643bcf1b3ff441b655c0293",
+  "source_sha256": "8fe9a4490edfa67532f1dee7ec11f1804437ad43f9f8b7536e32d5be8bce0bb5"
+}

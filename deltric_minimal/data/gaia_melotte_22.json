@@ -1,0 +1,34 @@
+{
+  "dataset": "gaia_melotte_22",
+  "cluster_name": "Melotte_22",
+  "source": "https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A+A/673/A114",
+  "documentation": "https://arxiv.org/abs/2303.13424",
+  "field_source": "Gaia DR3 gaiadr3.gaia_source (TAP cone search)",
+  "npz_sha256": "14753e4dde8d95388fbed60e0663bde92e19a322731f03e087cbd9c01bb99589",
+  "n": 1127,
+  "d": 7,
+  "n_anomaly": 113,
+  "features": [
+    "ra",
+    "dec",
+    "parallax",
+    "pmra",
+    "pmdec",
+    "phot_g_mean_mag",
+    "bp_rp"
+  ],
+  "cluster_centre_icrs": [
+    56.67978318,
+    24.10845447
+  ],
+  "r50_deg": 1.14555306,
+  "cone_radius_deg": 1.7183295899999997,
+  "mag_limit": 19.0,
+  "prob_threshold": 0.5,
+  "target_noise_rate": 0.1,
+  "label_encoding": {
+    "y": "-1 field/noise, 0 cluster member",
+    "y_gaia": "-1 field/noise, 0 cluster member"
+  },
+  "preprocessing": "No scaling or deduplication in stored data; evaluator standardizes features. Field pool cone-searched live from Gaia DR3, quality-cut (parallax_over_error > 3, ruwe < 1.4), then randomly subsampled (seed=0) to a target noise rate of 10%."
+}

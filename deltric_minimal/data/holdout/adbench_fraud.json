@@ -1,0 +1,18 @@
+{
+  "dataset": "fraud",
+  "split": "holdout",
+  "source": "https://raw.githubusercontent.com/Minqi824/ADBench/3dac8221081e190f157d78e93bfa8867f90d0965/adbench/datasets/Classical/13_fraud.npz",
+  "documentation": "https://github.com/Minqi824/ADBench#datasets",
+  "source_commit": "3dac8221081e190f157d78e93bfa8867f90d0965",
+  "source_sha256": "353b9a156b3f20e0739fafacdff76ef5cad1eeb7323be0ae71d384bf0e2594a6",
+  "n": 284807,
+  "d": 29,
+  "n_anomaly": 492,
+  "label_encoding": {
+    "y": "-1 anomaly, 0 inlier",
+    "y_adbench": "1 anomaly, 0 inlier"
+  },
+  "preprocessing": "Published ADBench features preserved without additional scaling or deduplication; standardize in evaluator.",
+  "split_unit": "Whole dataset; no row partitioning.",
+  "allocation": "Two of four new numerical datasets assigned to test and two to holdout, before evaluation."
+}

@@ -1,0 +1,140 @@
+{
+  "suite_version": "1.1.0",
+  "source_commit": "ee6d7a28eb0ff922d29b618b595795a45f1b5cb8",
+  "split_seed": 20260917,
+  "split_unit": "whole dataset",
+  "reference_partition": "labels0",
+  "source_noise_label": 0,
+  "local_noise_label": -1,
+  "policy": "Two seeded Chameleon datasets held out; remaining two and hdbscan development; three no-noise controls development. No parameter selection using holdout.",
+  "datasets": [
+    {
+      "dataset": "other/chameleon_t4_8k",
+      "name": "chameleon_t4_8k",
+      "split": "holdout",
+      "role": "noise benchmark",
+      "n": 8000,
+      "d": 2,
+      "n_noise": 761,
+      "path": "../holdout/other/chameleon_t4_8k.npz",
+      "sha256": {
+        "../holdout/other/source/chameleon_t4_8k.data.gz": "71fcee5a4f248c83dba2c019ca332fb23ad49d04f242f3a2fe1fb92a4b89de8e",
+        "../holdout/other/source/chameleon_t4_8k.labels0.gz": "2a70e156e4aef7333a08169908cd481bf192e69f1c4a12ccd5b482a77750548a",
+        "../holdout/other/source/chameleon_t4_8k.txt": "cd949948111e0340a349d170c166f885874564acd51b8459d59ce1d2ce7b68aa",
+        "../holdout/other/chameleon_t4_8k.npz": "8cd71c7aa8af84a909e042725462cc3db9fb28393f1c6019d9fe813fc7d38c4f"
+      }
+    },
+    {
+      "dataset": "other/chameleon_t5_8k",
+      "name": "chameleon_t5_8k",
+      "split": "development",
+      "role": "noise benchmark",
+      "n": 8000,
+      "d": 2,
+      "n_noise": 1187,
+      "path": "chameleon_t5_8k.npz",
+      "sha256": {
+        "source/chameleon_t5_8k.data.gz": "3b0461b74b00b28c51b956eb725da426df8366570516ded0c94c2c1acea40eec",
+        "source/chameleon_t5_8k.labels0.gz": "e7f7b9c64ddcf9f5bf23b7df7bbfab9d913929f2b7d3a66f9aefcd50e7b04344",
+        "source/chameleon_t5_8k.txt": "a825b87b00ead3b6a7785ca2513897a2545290b72e515995731f199456ec7722",
+        "chameleon_t5_8k.npz": "6e750a1852c178fec7b9e75cb03018278356bcca1e7435d09c5a1f980684dd11"
+      }
+    },
+    {
+      "dataset": "other/chameleon_t7_10k",
+      "name": "chameleon_t7_10k",
+      "split": "development",
+      "role": "noise benchmark",
+      "n": 10000,
+      "d": 2,
+      "n_noise": 926,
+      "path": "chameleon_t7_10k.npz",
+      "sha256": {
+        "source/chameleon_t7_10k.data.gz": "073b6e9be60184789c5254ea548df7c93dc6389af51a68ae250350b27c614ac6",
+        "source/chameleon_t7_10k.labels0.gz": "3e1771853d2f22ff31106cd87e26efa4acc0471bd5fe5d5e999d6e5ee7fab315",
+        "source/chameleon_t7_10k.txt": "7fc274eb6d5aecb3908fe551fbe72b1cd920fdf103f695b89fff2eed91986a0b",
+        "chameleon_t7_10k.npz": "40580a123fbfedc5b5a20313b2b53c57bed962b3c4bd9f785c8fecf5b910e7f1"
+      }
+    },
+    {
+      "dataset": "other/chameleon_t8_8k",
+      "name": "chameleon_t8_8k",
+      "split": "holdout",
+      "role": "noise benchmark",
+      "n": 8000,
+      "d": 2,
+      "n_noise": 346,
+      "path": "../holdout/other/chameleon_t8_8k.npz",
+      "sha256": {
+        "../holdout/other/source/chameleon_t8_8k.data.gz": "6691f3df316a64e649a2c295d961dcefce22a9aa371869938ff953a1cce21e31",
+        "../holdout/other/source/chameleon_t8_8k.labels0.gz": "18c0a08bebf023e0557c301401104cb3c59b7a4752209ef68b03f794edd24b98",
+        "../holdout/other/source/chameleon_t8_8k.txt": "7fc274eb6d5aecb3908fe551fbe72b1cd920fdf103f695b89fff2eed91986a0b",
+        "../holdout/other/chameleon_t8_8k.npz": "9f3ef29b751042e3a7c401937d55aacb443ce25da8af4fecafc0a31dce670a92"
+      }
+    },
+    {
+      "dataset": "other/hdbscan",
+      "name": "hdbscan",
+      "split": "development",
+      "role": "noise benchmark",
+      "n": 2309,
+      "d": 2,
+      "n_noise": 510,
+      "path": "hdbscan.npz",
+      "sha256": {
+        "source/hdbscan.data.gz": "e0409bac2e8589f6128881b23bed01333cfed72dd9ad93e3a9cdefcbf1af1f47",
+        "source/hdbscan.labels0.gz": "92b5abe77b311a573113ee804fa6311068df915696f27fcbc8a09b689e93cc34",
+        "source/hdbscan.txt": "0d748fc078e6c53742eb71f4f4950a59c253d3e845d3afa8b84980b8a7276ebe",
+        "hdbscan.npz": "ea804a03d6044c70a5120cc2b222df21db03b79bee57613a99680a1f98e36713"
+      }
+    },
+    {
+      "dataset": "other/iris",
+      "name": "iris",
+      "split": "development",
+      "role": "no-noise control",
+      "n": 150,
+      "d": 4,
+      "n_noise": 0,
+      "path": "iris.npz",
+      "sha256": {
+        "source/iris.data.gz": "5a4b82f7367b2957e7ac43366338e981b012dbf5c7bd6aaab8c0fe5623d1b976",
+        "source/iris.labels0.gz": "1f6d0d84bb2a111320c116ec8039585e1fa1820d1d9fa3dd9a4853226f67c8f8",
+        "source/iris.txt": "867fd5f54fd606099af2d629a4ed57d3dbbdfaa508c23e6773f7625ee4a6a5da",
+        "iris.npz": "da95c8ce1a86c9473587217904ef9895e8d0b9652efd01142ae485a568cbfcff"
+      }
+    },
+    {
+      "dataset": "other/iris5",
+      "name": "iris5",
+      "split": "development",
+      "role": "no-noise control",
+      "n": 105,
+      "d": 4,
+      "n_noise": 0,
+      "path": "iris5.npz",
+      "sha256": {
+        "source/iris5.data.gz": "c031e9ce04de0979f1048850d377e1c3036e2d4fad013855d1402e80f17cbf11",
+        "source/iris5.labels0.gz": "aba5c66d747e8a7d471c3c96cef783f9cd8f8bbf4c9a410bdcc581ecd89a833e",
+        "source/iris5.txt": "434ecf80cc2a52e181d9d946439e5ebf8ad112516725501fa2bcc8abadfa1b12",
+        "iris5.npz": "1a27df4f31686418a83219db9a4fa626cfc28cff3f346c91ad74b63707081b30"
+      }
+    },
+    {
+      "dataset": "other/square",
+      "name": "square",
+      "split": "development",
+      "role": "no-noise control",
+      "n": 1000,
+      "d": 2,
+      "n_noise": 0,
+      "path": "square.npz",
+      "sha256": {
+        "source/square.data.gz": "c2de51a0285b57bb11a3c003d9ccf7c502c3dab8386a4c7ae883a1cb39f80227",
+        "source/square.labels0.gz": "042b39347ae46d4badf69848782a1634c447065152cd1616dfe4e43f4f192dae",
+        "source/square.txt": "a93de21db35e2226385c2a33bb5dbe1d9aa7f82e4f813bf6d1c2ff67e0f5ad4f",
+        "square.npz": "b9b1e611adb946f1ca5acd355b997da657f1235eaf855f2c94d34b78b090ceae"
+      }
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "dataset": "gaia_ngc_6705",
+  "cluster_name": "NGC_6705",
+  "source": "https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A+A/673/A114",
+  "documentation": "https://arxiv.org/abs/2303.13424",
+  "field_source": "Gaia DR3 gaiadr3.gaia_source (TAP cone search)",
+  "npz_sha256": "2bf3491eb6b2a006876d4e14ff7fe6dc21ed89a30d3da4651cedbef417fe1ccf",
+  "n": 1338,
+  "d": 7,
+  "n_anomaly": 134,
+  "features": [
+    "ra",
+    "dec",
+    "parallax",
+    "pmra",
+    "pmdec",
+    "phot_g_mean_mag",
+    "bp_rp"
+  ],
+  "cluster_centre_icrs": [
+    282.76599002,
+    -6.2752533
+  ],
+  "r50_deg": 0.06311272,
+  "cone_radius_deg": 0.09466907999999999,
+  "mag_limit": 19.0,
+  "prob_threshold": 0.5,
+  "target_noise_rate": 0.1,
+  "label_encoding": {
+    "y": "-1 field/noise, 0 cluster member",
+    "y_gaia": "-1 field/noise, 0 cluster member"
+  },
+  "preprocessing": "No scaling or deduplication in stored data; evaluator standardizes features. Field pool cone-searched live from Gaia DR3, quality-cut (parallax_over_error > 3, ruwe < 1.4), then randomly subsampled (seed=0) to a target noise rate of 10%."
+}

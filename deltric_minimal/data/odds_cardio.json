@@ -1,0 +1,15 @@
+{
+  "dataset": "cardio",
+  "split": "test",
+  "source": "https://www.dropbox.com/scl/fi/a1v7m3p1kbcnte1/cardio.mat?rlkey=84oboq7oqussys4iqi2b3kgv2&dl=1",
+  "documentation": "https://shebuti.com/cardiotocogrpahy-dataset/",
+  "source_sha256": "5e568b6a73711012c481fa6cc984ab9c68e9a4fa44d6aeb3b43efa381c3f695b",
+  "n": 1831,
+  "d": 21,
+  "n_anomaly": 176,
+  "label_encoding": {
+    "y": "-1 anomaly, 0 inlier",
+    "y_odds": "1 anomaly, 0 inlier"
+  },
+  "preprocessing": "No scaling or deduplication in stored data; evaluator standardizes features."
+}

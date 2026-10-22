@@ -1,0 +1,20 @@
+{
+  "name": "Ionosphere",
+  "stem": "odds_ionosphere",
+  "split": "testing",
+  "path": "data/testing/additional_anomaly/odds_ionosphere.npz",
+  "source_path": "data/testing/additional_anomaly/source/odds_ionosphere.mat",
+  "source_url": "https://www.dropbox.com/scl/fi/ljczb7iixick3sc/ionosphere.mat?rlkey=nopu6o4fp7s5qesxkzia05sd4&dl=1",
+  "documentation": "https://shebuti.com/ionosphere-dataset/",
+  "source_commit": null,
+  "n": 351,
+  "d": 33,
+  "n_anomaly": 126,
+  "contamination": 0.358974358974359,
+  "duplicate_feature_rows": 1,
+  "constant_feature_columns": 0,
+  "finite_features": true,
+  "sha256": "a31a0d9f0f3a6548a7edb2dbaef7e08841a11beceecce4b665dea3fc72f015f7",
+  "source_sha256": "8ac5dfa6f47db4acdfe10615489b7f7dd015d79d5b381ce641e72baca3cfefb0",
+  "split_reason": "High-contamination boundary case, reported separately from rare-anomaly benchmarks."
+}

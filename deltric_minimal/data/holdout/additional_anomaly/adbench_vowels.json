@@ -1,0 +1,20 @@
+{
+  "name": "Vowels",
+  "stem": "adbench_vowels",
+  "split": "holdout",
+  "path": "data/holdout/additional_anomaly/adbench_vowels.npz",
+  "source_path": "data/holdout/additional_anomaly/source/adbench_vowels.npz",
+  "source_url": "https://raw.githubusercontent.com/Minqi824/ADBench/3dac8221081e190f157d78e93bfa8867f90d0965/adbench/datasets/Classical/40_vowels.npz",
+  "documentation": "https://shebuti.com/japanese-vowels-dataset/",
+  "source_commit": "3dac8221081e190f157d78e93bfa8867f90d0965",
+  "n": 1456,
+  "d": 12,
+  "n_anomaly": 50,
+  "contamination": 0.034340659340659344,
+  "duplicate_feature_rows": 4,
+  "constant_feature_columns": 0,
+  "finite_features": true,
+  "sha256": "4570a38110ca53659037c8911c0ab48488ca90dcc1ce962b1836d2cbdf77d170",
+  "source_sha256": "4bfc4244d1c882773bbbc50d4a5db5e52276e53506e46b2d45e02d074cfcb1b6",
+  "split_reason": "Multimodal normal population; speaker minority; dependent speech frames."
+}

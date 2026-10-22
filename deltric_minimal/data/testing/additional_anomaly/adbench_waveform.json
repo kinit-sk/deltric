@@ -1,0 +1,20 @@
+{
+  "name": "Waveform",
+  "stem": "adbench_waveform",
+  "split": "testing",
+  "path": "data/testing/additional_anomaly/adbench_waveform.npz",
+  "source_path": "data/testing/additional_anomaly/source/adbench_waveform.npz",
+  "source_url": "https://raw.githubusercontent.com/Minqi824/ADBench/3dac8221081e190f157d78e93bfa8867f90d0965/adbench/datasets/Classical/41_Waveform.npz",
+  "documentation": "https://www.dbs.ifi.lmu.de/research/outlier-evaluation/DAMI/literature/Waveform/",
+  "source_commit": "3dac8221081e190f157d78e93bfa8867f90d0965",
+  "n": 3443,
+  "d": 21,
+  "n_anomaly": 100,
+  "contamination": 0.02904443799012489,
+  "duplicate_feature_rows": 0,
+  "constant_feature_columns": 0,
+  "finite_features": true,
+  "sha256": "edd307246b9d37cc946cf0e3547a075c3e3ca66f0d2c98cd7e0faf0830eac162",
+  "source_sha256": "6c9d867337ad1a2f8372c1d27f4c032f0401237e2041b7c45f00de8d319ff30f",
+  "split_reason": "Constructed waveform minority-class benchmark, not natural equipment failures."
+}

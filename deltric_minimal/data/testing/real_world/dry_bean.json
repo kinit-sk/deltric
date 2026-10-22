@@ -1,0 +1,52 @@
+{
+  "name": "dry_bean",
+  "split": "testing",
+  "path": "data/testing/real_world/dry_bean.npz",
+  "n": 13611,
+  "d": 16,
+  "k_clusters": 6,
+  "clusters": [
+    "DERMASON",
+    "SIRA",
+    "SEKER",
+    "HOROZ",
+    "CALI",
+    "BARBUNYA"
+  ],
+  "anomaly_classes": [
+    "BOMBAY"
+  ],
+  "n_anomaly": 522,
+  "contamination": 0.03835133348027331,
+  "duplicate_feature_rows": 68,
+  "label_encoding": {
+    "y": "-1 anomaly, 0..k-1 cluster (ordered by size)",
+    "source_y": "original class label"
+  },
+  "preprocessing": "Published features, no scaling; evaluator standardizes per dataset.",
+  "source": "https://archive.ics.uci.edu/static/public/602/dry+bean+dataset.zip",
+  "documentation": "https://doi.org/10.24432/C50S4B",
+  "citation": "Koklu & Ozkan (2020), Computers and Electronics in Agriculture 174:105507",
+  "features": [
+    "Area",
+    "Perimeter",
+    "MajorAxisLength",
+    "MinorAxisLength",
+    "AspectRation",
+    "Eccentricity",
+    "ConvexArea",
+    "EquivDiameter",
+    "Extent",
+    "Solidity",
+    "roundness",
+    "Compactness",
+    "ShapeFactor1",
+    "ShapeFactor2",
+    "ShapeFactor3",
+    "ShapeFactor4"
+  ],
+  "anomaly_origin": "natural_rare_class",
+  "construction": "Six bean varieties are clusters; BOMBAY (522 grains, 3.8%, much larger seeds) is the anomaly class at natural frequency.",
+  "sha256": "d97344d0a307da1ec48efcfdfc7a98fae9fb384d47c04f3243a12aa85b802d3d",
+  "source_sha256": "0a64eff5be87f48c3dbbfc0a12a56c5d5b5167ef8e61cd45d69b3e7c7130c06f"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Arrhythmia",
+  "stem": "odds_arrhythmia",
+  "split": "testing",
+  "path": "data/testing/additional_anomaly/odds_arrhythmia.npz",
+  "source_path": "data/testing/additional_anomaly/source/odds_arrhythmia.mat",
+  "source_url": "https://www.dropbox.com/scl/fi/cthd4xsv20pq2ih/arrhythmia.mat?rlkey=og772yjb8hllift3qz7y58oy0&dl=1",
+  "documentation": "https://shebuti.com/arrhythmia-dataset/",
+  "source_commit": null,
+  "n": 452,
+  "d": 274,
+  "n_anomaly": 66,
+  "contamination": 0.14601769911504425,
+  "duplicate_feature_rows": 0,
+  "constant_feature_columns": 17,
+  "finite_features": true,
+  "sha256": "bb4af18e9cba3af500ccf6bae821b5fe8d2f729f8795a78b8afb1882538e334d",
+  "source_sha256": "e4d47e499591ae31e5d7f0cd983367092353eac240f48e14c9b36457edb3460d",
+  "split_reason": "High dimensionality relative to sample size; selected rare diagnoses, constant columns retained."
+}

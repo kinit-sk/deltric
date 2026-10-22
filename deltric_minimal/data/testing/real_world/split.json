@@ -1,0 +1,63 @@
+{
+  "created": "2026-09-24",
+  "split_unit": "whole dataset",
+  "policy": "Split fixed before any DelTriC run, balanced by modality and anomaly origin. Holdout is not fit, plotted or scored during tuning.",
+  "holdout_evaluated": false,
+  "datasets": [
+    {
+      "name": "anuran_frogs",
+      "split": "testing",
+      "path": "data/testing/real_world/anuran_frogs.npz",
+      "n": 7195,
+      "d": 22,
+      "k_clusters": 7,
+      "n_anomaly": 330,
+      "anomaly_origin": "natural_rare_class",
+      "sha256": "29947a306db9841f77068d454e9480d49a00e375dabe7c007442c87d8b996429"
+    },
+    {
+      "name": "dry_bean",
+      "split": "testing",
+      "path": "data/testing/real_world/dry_bean.npz",
+      "n": 13611,
+      "d": 16,
+      "k_clusters": 6,
+      "n_anomaly": 522,
+      "anomaly_origin": "natural_rare_class",
+      "sha256": "d97344d0a307da1ec48efcfdfc7a98fae9fb384d47c04f3243a12aa85b802d3d"
+    },
+    {
+      "name": "gaia_vela_puppis",
+      "split": "testing",
+      "path": "data/testing/real_world/gaia_vela_puppis.npz",
+      "n": 20000,
+      "d": 5,
+      "k_clusters": 5,
+      "n_anomaly": 19049,
+      "anomaly_origin": "natural",
+      "sha256": "4614547e83b1ff484e443af1994400b62e865a25c238570b28abd733bb6a3bca"
+    },
+    {
+      "name": "hcv",
+      "split": "testing",
+      "path": "data/testing/real_world/hcv.npz",
+      "n": 589,
+      "d": 12,
+      "k_clusters": 1,
+      "n_anomaly": 63,
+      "anomaly_origin": "natural",
+      "sha256": "92dc01ae36c5ec64eea8a0d87ce937636679575b7adab2f6c2c5b7640ba62da2"
+    },
+    {
+      "name": "smd_machine_1_1",
+      "split": "testing",
+      "path": "data/testing/real_world/smd_machine_1_1.npz",
+      "n": 14240,
+      "d": 38,
+      "k_clusters": 1,
+      "n_anomaly": 1346,
+      "anomaly_origin": "natural",
+      "sha256": "26c526bf1a0740559ee48db4ab1c4c8ce433dd4826fff4347ac3c59a9f2a4661"
+    }
+  ]
+}

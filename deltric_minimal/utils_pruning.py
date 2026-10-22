@@ -1,6 +1,6 @@
 """Minimal projection and Delaunay helpers used by component-growth DelTriC.
 
-The production component-growth pipeline needs only these helpers: UMAP/PCA
+The production component-growth pipeline needs only these helpers: UMAP/t-SNE/PCA
 projection, Delaunay topology, and original- or projected-space edge lengths.
 Legacy learned pruning and clustering implementations deliberately do not live
 in this self-contained prototype.
@@ -18,6 +18,7 @@ from itertools import combinations
 import numpy as np
 from scipy.spatial import Delaunay
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
 
 def _configure_numba_cache() -> None:
@@ -82,11 +83,16 @@ def get_triangles_with_edges(
         if resolved_epochs is not None:
             kwargs["n_epochs"] = resolved_epochs
         X_proj = UMAP(**kwargs).fit_transform(X)
+    elif method == "tsne" and X.shape[1] > project_dim:
+        X_proj = TSNE(
+            n_components=project_dim, perplexity=min(30.0, (len(X) - 1) / 3),
+            init="pca", learning_rate="auto", random_state=42,
+        ).fit_transform(X)
     elif method == "none" or X.shape[1] <= project_dim:
         X_proj = X
     else:
         raise ValueError(
-            f"Invalid projection method {method!r}; choose 'umap', 'pca', or 'none'."
+            f"Invalid projection method {method!r}; choose 'umap', 'tsne', 'pca', or 'none'."
         )
 
     projection_seconds = (

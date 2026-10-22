@@ -1,0 +1,35 @@
+{
+  "repository": "kendx/NLP-ADBench",
+  "revision": "2502e79ac4dfda5781dbfb9709179048e7c65191",
+  "subset": "bbc",
+  "files": [
+    {
+      "path": "README.md",
+      "size": 635
+    },
+    {
+      "path": "datasets/bbc/bbc_test_data.jsonl",
+      "size": 1395375
+    },
+    {
+      "path": "datasets/bbc/bbc_train_data.jsonl",
+      "size": 2877450
+    },
+    {
+      "path": "embeddings/bbc/bbc_test_data_bert_base_uncased_feature.npy",
+      "size": 1778816
+    },
+    {
+      "path": "embeddings/bbc/bbc_test_data_gpt_text-embedding-3-large_feature.npy",
+      "size": 14229632
+    },
+    {
+      "path": "embeddings/bbc/bbc_train_data_bert_base_uncased_feature.npy",
+      "size": 3704960
+    },
+    {
+      "path": "embeddings/bbc/bbc_train_data_gpt_text-embedding-3-large_feature.npy",
+      "size": 29638784
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "name": "hcv",
+  "split": "testing",
+  "path": "data/testing/real_world/hcv.npz",
+  "n": 589,
+  "d": 12,
+  "k_clusters": 1,
+  "clusters": [
+    "0=Blood Donor"
+  ],
+  "anomaly_classes": [
+    "0s=suspect Blood Donor",
+    "1=Hepatitis",
+    "2=Fibrosis",
+    "3=Cirrhosis"
+  ],
+  "n_anomaly": 63,
+  "contamination": 0.10696095076400679,
+  "duplicate_feature_rows": 0,
+  "label_encoding": {
+    "y": "-1 anomaly, 0..k-1 cluster (ordered by size)",
+    "source_y": "original class label"
+  },
+  "preprocessing": "Published features, no scaling; evaluator standardizes per dataset.",
+  "source": "https://archive.ics.uci.edu/static/public/571/hcv+data.zip",
+  "documentation": "https://doi.org/10.24432/C5D612",
+  "citation": "Hoffmann et al. (2018), J. Lab. Precis. Med. 3:58",
+  "features": [
+    "Age",
+    "Sex",
+    "ALB",
+    "ALP",
+    "ALT",
+    "AST",
+    "BIL",
+    "CHE",
+    "CHOL",
+    "CREA",
+    "GGT",
+    "PROT"
+  ],
+  "anomaly_origin": "natural",
+  "construction": "Blood donors are the single cluster; hepatitis, fibrosis, cirrhosis and 'suspect donor' patients are anomalies. Dropped 26 rows with missing lab values; Sex encoded f=1, m=0.",
+  "sha256": "92dc01ae36c5ec64eea8a0d87ce937636679575b7adab2f6c2c5b7640ba62da2",
+  "source_sha256": "0fafa2c4ae94db98b95f35cd41e9f4cedbd1e105282ab0cd7b5ed3effe5a05d8"
+}
